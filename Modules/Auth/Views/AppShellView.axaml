@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Auth.ViewModels"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             xmlns:controls="using:GestionCommerciale.Shared.Controls"
+             x:Class="GestionCommerciale.Modules.Auth.Views.AppShellView"
+             x:DataType="vm:AppShellViewModel">
+  <Grid>
+    <Grid ColumnDefinitions="200,*" Margin="12">
+      <Border Grid.Column="0" Padding="10" Background="{DynamicResource CourseraSurfaceBrush}" CornerRadius="12" BorderThickness="1">
+      <ScrollViewer>
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding UserLabel}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"/>
+          <Button Content="{Binding NavHome}" Command="{Binding GoHomeCommand}" HorizontalAlignment="Stretch"
+                  Background="{Binding IsNavHomeActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                  Foreground="{Binding IsNavHomeActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                  BorderBrush="{Binding IsNavHomeActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+
+          <Button Content="{Binding NavPos}" Command="{Binding GoPosCommand}" HorizontalAlignment="Stretch"
+                  Background="{Binding IsNavPosActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                  Foreground="{Binding IsNavPosActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                  BorderBrush="{Binding IsNavPosActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                  Margin="0,2,0,0"/>
+
+          <Button Command="{Binding ToggleVenteNavCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Background="Transparent" BorderThickness="0" Padding="0,10,0,0" Margin="0,2,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding VenteNavArrow}" VerticalAlignment="Center" Opacity="0.85" FontSize="11"/>
+              <TextBlock Text="{Binding NavVente}" FontWeight="SemiBold" FontSize="12" Classes="subtle" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <StackPanel Spacing="8" IsVisible="{Binding VenteNavExpanded}">
+            <Button Content="{Binding NavClients}" Command="{Binding GoClientsCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavClients}"
+                    Background="{Binding IsNavClientsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavClientsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavClientsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavDevis}" Command="{Binding GoDevisCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavDevis}"
+                    Background="{Binding IsNavDevisActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavDevisActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavDevisActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavBcc}" Command="{Binding GoBCVCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavBCC}"
+                    Background="{Binding IsNavBccActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavBccActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavBccActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavBl}" Command="{Binding GoBLCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavBL}"
+                    Background="{Binding IsNavBlActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavBlActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavBlActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavFactures}" Command="{Binding GoFacturesCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavFactures}"
+                    Background="{Binding IsNavFacturesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavFacturesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavFacturesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavAvoirs}" Command="{Binding GoAvoirsCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavAvoirs}"
+                    Background="{Binding IsNavAvoirsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavAvoirsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavAvoirsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+          </StackPanel>
+
+          <Button Command="{Binding ToggleAchatNavCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Background="Transparent" BorderThickness="0" Padding="0,10,0,0" Margin="0,2,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding AchatNavArrow}" VerticalAlignment="Center" Opacity="0.85" FontSize="11"/>
+              <TextBlock Text="{Binding NavAchat}" FontWeight="SemiBold" FontSize="12" Classes="subtle" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <StackPanel Spacing="8" IsVisible="{Binding AchatNavExpanded}">
+            <Button Content="{Binding NavFournisseurs}" Command="{Binding GoFournisseursCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavFournisseurs}"
+                    Background="{Binding IsNavFournisseursActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavFournisseursActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavFournisseursActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavBc}" Command="{Binding GoBCCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavBC}"
+                    Background="{Binding IsNavBcActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavBcActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavBcActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavBr}" Command="{Binding GoBRCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavBR}"
+                    Background="{Binding IsNavBrActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavBrActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavBrActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavFacturesFournisseur}" Command="{Binding GoFacturesFournisseurCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavFacturesFournisseur}"
+                    Background="{Binding IsNavFacturesFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavFacturesFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavFacturesFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavAvoirFournisseur}" Command="{Binding GoAvoirFournisseurCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavAvoirFournisseur}"
+                    Background="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+          </StackPanel>
+
+          <Border Height="14"/>
+          <Button Command="{Binding ToggleFooterNavCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Background="Transparent" BorderThickness="0" Padding="0,0,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding FooterNavArrow}" VerticalAlignment="Center" Opacity="0.85" FontSize="11"/>
+              <TextBlock Text="{Binding NavStockAdmin}" FontWeight="SemiBold" FontSize="12" Classes="subtle" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <StackPanel Spacing="8" IsVisible="{Binding FooterNavExpanded}">
+            <Button Content="{Binding NavStock}" Command="{Binding GoStockCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavStock}"
+                    Background="{Binding IsNavStockActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavStockActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavStockActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavProduits}" Command="{Binding GoProduitsCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavProduits}"
+                    Background="{Binding IsNavProduitsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavProduitsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavProduitsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavReports}" Command="{Binding GoReportsCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavReports}"
+                    Background="{Binding IsNavReportsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavReportsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavReportsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavSettings}" Command="{Binding GoSettingsCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavSettings}"
+                    Background="{Binding IsNavSettingsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavSettingsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavSettingsActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+          </StackPanel>
+
+          <!--
+           <Border Height="8"/>
+
+         <Button Content="Test perf"
+           Command="{Binding RunPerfTestCommand}"
+           HorizontalAlignment="Stretch"/>
+          <TextBlock Text="{Binding TestProgress}" TextWrapping="Wrap" FontSize="11" Classes="subtle" IsVisible="{Binding IsTestRunning}"/>
+          -->
+
+         </StackPanel>
+       
+      </ScrollViewer>
+    </Border>
+    <ContentControl Grid.Column="1" Content="{Binding WorkspaceCurrentPage}" Margin="12,0,0,0"/>
+    </Grid>
+
+    <!-- Global virtual keyboard overlay -->
+    <Grid x:Name="KeyboardOverlay" IsVisible="False" Background="#80000000" ZIndex="100"
+          PointerPressed="OnKeyboardOverlayPointerPressed">
+      <Border VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="480" CornerRadius="12"
+              BorderThickness="1" Padding="8"
+              Background="{DynamicResource CourseraSurfaceBrush}" BorderBrush="{DynamicResource CourseraBorderBrush}">
+        <controls:VirtualKeyboard x:Name="AppKeyboard"
+                                  KeyPressed="OnKeyboardKeyPressed"
+                                  BackspacePressed="OnKeyboardBackspace"
+                                  Cleared="OnKeyboardClear"
+                                  Closed="OnKeyboardClose"/>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

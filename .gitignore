@@ -1,0 +1,80 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Oo]ut/
+artifacts*
+_build*
+publish/
+dist/
+releases/
+
+# .NET / NuGet
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+project.lock.json
+project.fragment.lock.json
+**/packages/*
+!**/packages/build/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+.nuget/
+*.nuget.props
+*.nuget.targets
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# MSBuild / Rider
+*.rsuser
+*.DotSettings.user
+
+# Visual Studio
+.vs/
+*.VC.db
+*.VC.VC.opendb
+*.VC.db-shm
+*.VC.db-wal
+
+# JetBrains Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# VS Code / Cursor (optional: uncomment if you don't want to share workspace settings)
+# .vscode/
+# .cursor/
+
+# Local databases & SQLite sidecars (adjust if you commit seed DBs)
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Windows image file caches
+*.stackdump
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# Secrets & local config (uncomment and extend as needed)
+# appsettings.Development.json
+# *.pfx
+# secrets.json

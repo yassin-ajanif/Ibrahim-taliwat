@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Auth.ViewModels"
+             x:Class="GestionCommerciale.Modules.Auth.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="14" MaxWidth="720">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{Binding LblLoad}" Command="{Binding LoadCommand}"/>
+        <Button Content="{Binding LblSave}" Command="{Binding SaveCommand}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblUiLanguage}" FontWeight="SemiBold"/>
+        <ComboBox ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguageOption}" MinWidth="200">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="vm:UiLanguageOption">
+              <TextBlock Text="{Binding Label}"/>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblSocieteNom}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding SocieteNom}" Watermark="{Binding WmSociete}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblAdresse}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding SocieteAdresse}" Watermark="{Binding WmAdresse}" AcceptsReturn="True" Height="80"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblIce}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding SocieteIce}" Watermark="{Binding WmIce}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblMentionsLegales}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding SocieteMentionsLegales}" Watermark="{Binding WmMentionsLegales}" AcceptsReturn="True" MinHeight="72"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblLogo}" FontWeight="SemiBold"/>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Grid.Column="0"
+                   Text="{Binding SocieteLogoPath}"
+                   Watermark="{Binding WmLogoPath}"
+                   IsReadOnly="True"
+                   VerticalContentAlignment="Center"/>
+          <Button Grid.Column="1"
+                  Margin="8,0,0,0"
+                  Content="{Binding LblPickLogo}"
+                  Command="{Binding PickLogoCommand}"
+                  VerticalAlignment="Center"/>
+        </Grid>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblTva}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding TauxTvaText}" Watermark="{Binding WmTva}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblBl}" FontWeight="SemiBold"/>
+        <CheckBox Content="{Binding LblBlocageStock}" IsChecked="{Binding BlocageStock}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblDevisJours}" FontWeight="SemiBold"/>
+        <NumericUpDown Minimum="1" Maximum="365" Value="{Binding DevisValiditeJours}"/>
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <CheckBox Content="{Binding LblEnableVirtualKeyboard}" IsChecked="{Binding EnableVirtualKeyboard}"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding LblDevise}" FontWeight="SemiBold"/>
+        <TextBox Text="{Binding Devise}" Watermark="{Binding WmDevise}"/>
+      </StackPanel>
+
+      <Border BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,4,0,0">
+        <StackPanel Spacing="10">
+          <Button Command="{Binding ToggleNumberingCommand}" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding NumberingArrow}" VerticalAlignment="Center"
+                         Opacity="0.85" FontSize="11" Margin="0,0,8,0"/>
+              <TextBlock Grid.Column="1" Text="{Binding LblNumbering}" FontWeight="Bold" VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{Binding LblNumberingYear}" FontWeight="SemiBold" Opacity="0.8"/>
+                <TextBlock Text="{Binding NumberingYear}" FontWeight="SemiBold"/>
+              </StackPanel>
+            </Grid>
+          </Button>
+          <StackPanel Spacing="10" IsVisible="{Binding NumberingExpanded}">
+            <TextBlock Text="{Binding LblNumberingHelp}" TextWrapping="Wrap" Opacity="0.8" FontSize="12"/>
+            <Border Background="{DynamicResource CourseraSurfaceMutedBrush}" CornerRadius="6" Padding="8,6">
+              <Grid ColumnDefinitions="*,120,120,120">
+                <TextBlock Grid.Column="0" Text="{Binding LblNumberingDocument}" FontWeight="SemiBold" FontSize="12"/>
+                <TextBlock Grid.Column="1" Text="{Binding LblNumberingInDb}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding LblNumberingLastOutside}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                <TextBlock Grid.Column="3" Text="{Binding LblNumberingNext}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+              </Grid>
+            </Border>
+            <ItemsControl ItemsSource="{Binding NumberingRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:DocumentNumberingSettingRow">
+                  <Border Padding="8,6" BorderBrush="#18000000" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,120,120,120">
+                      <TextBlock Grid.Column="0" Text="{Binding DocumentLabel}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                      <TextBlock Grid.Column="1" Text="{Binding DbMaxSequence, StringFormat={}{0:D4}}" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.75"/>
+                      <NumericUpDown Grid.Column="2" Minimum="0" Maximum="999999" Value="{Binding LastUsedOutside}"
+                                       FormatString="0" MinWidth="100" HorizontalAlignment="Center"/>
+                      <TextBlock Grid.Column="3" Text="{Binding NextPreview}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="#2E7D32" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0">
+        <StackPanel Spacing="10">
+          <Button Command="{Binding ToggleBackupCommand}" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding BackupArrow}" VerticalAlignment="Center" Opacity="0.85" FontSize="11"/>
+              <TextBlock Text="{Binding LblBackup}" FontWeight="Bold" Foreground="#2E7D32" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <StackPanel Spacing="10" IsVisible="{Binding BackupExpanded}">
+            <CheckBox Content="{Binding LblBackupEnabled}" IsChecked="{Binding BackupEnabled}"/>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding LblBackupInterval}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <NumericUpDown Grid.Column="1" Minimum="1" Maximum="10080" Value="{Binding BackupIntervalHours}" MinWidth="80"/>
+              <ComboBox Grid.Column="2" Margin="8,0,0,0" MinWidth="100"
+                        ItemsSource="{Binding BackupIntervalUnitOptions}"
+                        SelectedItem="{Binding BackupIntervalUnit}"/>
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*">
+              <TextBlock Grid.Column="0" Text="{Binding LblBackupRetention}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <NumericUpDown Grid.Column="1" Minimum="1" Maximum="365" Value="{Binding BackupRetentionDays}" MinWidth="100"/>
+            </Grid>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding LblBackupDirectory}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0" Text="{Binding BackupDirectory}" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                <Button Grid.Column="1" Margin="8,0,0,0" Content="{Binding LblPickBackupDir}" Command="{Binding PickBackupDirectoryCommand}" VerticalAlignment="Center"/>
+              </Grid>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{Binding LblBackupNow}" Command="{Binding CreateBackupNowCommand}"/>
+              <TextBlock VerticalAlignment="Center" Text="{Binding LblLastBackup}"/>
+              <TextBlock VerticalAlignment="Center" Text="{Binding LastBackupDateStr}"/>
+            </StackPanel>
+            <TextBlock Classes="subtle" FontSize="12">
+              <Run Text="{Binding LblBackupDirectory}"/><Run Text=": "/><Run Text="{Binding BackupDirectory}"/>
+            </TextBlock>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="#993300" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding LblDangerZone}" FontWeight="Bold" Foreground="#993300"/>
+          <Button Content="{Binding BtnFormatSystem}"
+                  Command="{Binding FormatSystemCommand}"
+                  HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

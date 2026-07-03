@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Devis.ViewModels"
+             xmlns:beh="using:GestionCommerciale.Shared.Behaviors"
+             xmlns:shared="using:GestionCommerciale.Shared.Views"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             x:Class="GestionCommerciale.Modules.Devis.Views.DevisListView"
+             x:Name="DevisListRoot"
+             x:DataType="vm:DevisListViewModel">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="{Binding BtnNew}" Command="{Binding NewDevisCommand}"/>
+      <Button Content="{Binding BtnFilterDate}" Command="{Binding FilterDateCommand}"/>
+      <TextBox MinWidth="260" MaxWidth="420" VerticalAlignment="Center"
+               Watermark="{Binding SearchWatermark}" Text="{Binding SearchText}"/>
+    </StackPanel>
+    <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,8,0,0">
+      <Border Grid.Row="0" Background="{DynamicResource CourseraSurfaceBrush}" CornerRadius="8,8,0,0" Padding="10,8" Margin="0,0,0,1">
+        <Grid ColumnDefinitions="120,*,110,118,100,*">
+          <TextBlock Grid.Column="0" Text="{Binding ColHeaderRef}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <TextBlock Grid.Column="1" Text="{Binding ColHeaderClient}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <TextBlock Grid.Column="2" Text="{Binding ColHeaderDate}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <TextBlock Grid.Column="3" Text="{Binding ColHeaderValidite}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <TextBlock Grid.Column="4" Text="{Binding ColHeaderTtc}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="End" Margin="0,0,12,0"/>
+          <TextBlock Grid.Column="5" Text="{Binding ColHeaderNote}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        </Grid>
+      </Border>
+      <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+               beh:ListBoxOpenOnDoubleClick.OpenCommand="{Binding OpenSelectedCommand}">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="vm:DevisListRow">
+            <Border Padding="10,8" Background="Transparent">
+              <Border.ContextMenu>
+                <ContextMenu Opening="OnRowContextMenuOpening">
+                  <MenuItem Header="{Binding #DevisListRoot.((vm:DevisListViewModel)DataContext).MenuDeleteDevis}"
+                            Command="{Binding #DevisListRoot.((vm:DevisListViewModel)DataContext).DeleteDevisCommand}"
+                            CommandParameter="{Binding}"/>
+                </ContextMenu>
+              </Border.ContextMenu>
+              <Grid ColumnDefinitions="120,*,110,118,100,*">
+                <TextBlock Grid.Column="0" Text="{Binding Devis.Numero}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="1" Text="{Binding ClientNom}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding DateShort}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="3" Text="{Binding ValidUntilShort}" VerticalAlignment="Center" Margin="0,0,12,0"
+                           Foreground="{Binding IsExpired, Converter={x:Static conv:ExpiredValidityForegroundConverter.Instance}}"/>
+                <TextBlock Grid.Column="4" Text="{Binding TtcLabel}" VerticalAlignment="Center" FontWeight="SemiBold" TextAlignment="End" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="5" Text="{Binding NotePreview}" VerticalAlignment="Center" Opacity="0.85" TextTrimming="CharacterEllipsis"/>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+    <shared:ListPaginationBar Grid.Row="2" DataContext="{Binding Pagination}"/>
+  </Grid>
+</UserControl>

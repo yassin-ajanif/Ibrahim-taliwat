@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "GestionCommerciale": {
+      "commandName": "Project",
+      "hotReloadEnabled": true
+    }
+  }
+}

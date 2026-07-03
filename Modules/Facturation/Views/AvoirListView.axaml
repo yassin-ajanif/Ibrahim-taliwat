@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Facturation.ViewModels"
+             xmlns:beh="using:GestionCommerciale.Shared.Behaviors"
+             xmlns:shared="using:GestionCommerciale.Shared.Views"
+             x:Class="GestionCommerciale.Modules.Facturation.Views.AvoirListView"
+              x:Name="AvoirListRoot"
+             x:DataType="vm:AvoirListViewModel">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="{Binding BtnNew}" Command="{Binding NewAvoirCommand}"/>
+      <Button Content="{Binding BtnFilterDate}" Command="{Binding FilterDateCommand}"/>
+      <TextBox Width="260" MinWidth="200" VerticalAlignment="Center"
+               Watermark="{Binding WmSearch}"
+               Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+    </StackPanel>
+    <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,8,0,0">
+      <Border Grid.Row="0" Padding="10,6" BorderThickness="1" CornerRadius="8,8,0,0"
+              Background="{DynamicResource CourseraSurfaceMutedBrush}" BorderBrush="{DynamicResource CourseraBorderBrush}">
+        <Grid ColumnDefinitions="0.95*,1.1*,0.75*,0.85*,1.15*,0.9*,0.9*">
+          <TextBlock Grid.Column="0" Text="{Binding ColNumero}" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="1" Text="{Binding ColClient}" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="2" Text="{Binding ColDate}" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="3" Text="{Binding ColFacture}" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="4" Text="{Binding ColMotif}" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="5" Text="{Binding ColHt}" FontWeight="SemiBold" TextAlignment="Right"/>
+          <TextBlock Grid.Column="6" Text="{Binding ColTtc}" FontWeight="SemiBold" TextAlignment="Right"/>
+        </Grid>
+      </Border>
+      <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+               beh:ListBoxOpenOnDoubleClick.OpenCommand="{Binding OpenSelectedCommand}">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="vm:AvoirListRow">
+            <Border Padding="10,8" Background="Transparent">
+              <Border.ContextMenu>
+                <ContextMenu Opening="OnRowContextMenuOpening">
+                  <MenuItem Header="{Binding #AvoirListRoot.((vm:AvoirListViewModel)DataContext).MenuDeleteAvoir}"
+                            Command="{Binding #AvoirListRoot.((vm:AvoirListViewModel)DataContext).DeleteAvoirCommand}"
+                            CommandParameter="{Binding}"/>
+                </ContextMenu>
+              </Border.ContextMenu>
+              <Grid ColumnDefinitions="0.95*,1.1*,0.75*,0.85*,1.15*,0.9*,0.9*">
+                <TextBlock Grid.Column="0" Text="{Binding Avoir.Numero}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding ClientNom}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="2" Text="{Binding DateShort}" VerticalAlignment="Center" Classes="subtle"/>
+                <TextBlock Grid.Column="3" Text="{Binding FactureNumero}" VerticalAlignment="Center" Classes="subtle" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="4" Text="{Binding MotifDisplay}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="5" Text="{Binding HtLabel}" VerticalAlignment="Center" TextAlignment="Right" Classes="subtle"/>
+                <TextBlock Grid.Column="6" Text="{Binding TtcLabel}" VerticalAlignment="Center" TextAlignment="Right" FontWeight="SemiBold"/>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+    <shared:ListPaginationBar Grid.Row="2" DataContext="{Binding Pagination}"/>
+  </Grid>
+</UserControl>

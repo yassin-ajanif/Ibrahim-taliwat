@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Auth.ViewModels"
+             x:Class="GestionCommerciale.Modules.Auth.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Background="{DynamicResource CourseraWarningBrush}"
+            IsVisible="{Binding ShowTrialMessage}"
+            Padding="12 8" CornerRadius="8" Margin="8 8 8 0">
+      <TextBlock Text="{Binding TrialMessage}" TextWrapping="Wrap"
+                 FontSize="14" Foreground="White" FontWeight="SemiBold"/>
+    </Border>
+    <ContentControl Grid.Row="1" Content="{Binding Dashboard}"
+                    IsVisible="{Binding ShowDashboard}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"/>
+    <StackPanel Grid.Row="1" IsVisible="{Binding ShowWelcomeOnly}"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Spacing="12"
+                MaxWidth="480">
+      <TextBlock Text="{Binding Welcome}" TextWrapping="Wrap" FontSize="16"/>
+    </StackPanel>
+
+    <!-- Loading overlay -->
+    <Border IsVisible="{Binding Dashboard.IsBusy}" Background="#990F172A"
+            IsHitTestVisible="False"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+        <Border Padding="24,20" CornerRadius="14" Background="{DynamicResource CourseraSurfaceBrush}"
+                BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1"
+                Classes="report-shadow-soft">
+          <StackPanel Spacing="12" MinWidth="220">
+            <TextBlock Text="{Binding Dashboard.LblLoading}" FontWeight="SemiBold" FontSize="14"
+                       HorizontalAlignment="Center"/>
+            <ProgressBar IsIndeterminate="True" Height="4" CornerRadius="2"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

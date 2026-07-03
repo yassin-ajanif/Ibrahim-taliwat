@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GestionCommerciale.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+        x:Class="GestionCommerciale.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/faturati.ico"
+        Title="{Binding Title}"
+        Width="1100" Height="720"
+        MinWidth="1100">
+
+    <Grid RowDefinitions="Auto,*">
+        <Button Grid.Row="0"
+                IsVisible="{Binding IsUpdateBannerVisible}"
+                Content="{Binding UpdateBannerText}"
+                Command="{Binding ApplyUpdateCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Margin="0,0,0,4"
+                Padding="12,8"
+                Background="#22C55E"
+                Foreground="White"
+                BorderThickness="0"
+                CornerRadius="6"
+                FontWeight="SemiBold"
+                Cursor="Hand"/>
+        <ContentControl Grid.Row="1" Content="{Binding Root.CurrentRoot}"/>
+    </Grid>
+</Window>

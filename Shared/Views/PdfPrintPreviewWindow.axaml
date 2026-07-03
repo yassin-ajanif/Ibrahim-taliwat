@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GestionCommerciale.Shared.ViewModels"
+        x:Class="GestionCommerciale.Shared.Views.PdfPrintPreviewWindow"
+        x:DataType="vm:PdfPrintPreviewViewModel"
+        Title="{Binding TitleLabel}"
+        Width="900"
+        Height="560"
+        MinWidth="640"
+        MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Background="#323639">
+  <Grid RowDefinitions="*,Auto">
+    <!-- Scrollable preview -->
+    <Border Grid.Row="0" Background="#525659" Padding="16">
+      <Panel>
+        <TextBlock Text="…"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="28"
+                   Foreground="#D0D0D0"
+                   IsVisible="{Binding IsLoadingPreview}"/>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      IsVisible="{Binding !IsLoadingPreview}">
+          <LayoutTransformControl HorizontalAlignment="Center">
+            <LayoutTransformControl.LayoutTransform>
+              <ScaleTransform ScaleX="{Binding ZoomScale}"
+                              ScaleY="{Binding ZoomScale}"/>
+            </LayoutTransformControl.LayoutTransform>
+            <ItemsControl ItemsSource="{Binding PreviewPages}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="White"
+                          Margin="0,0,0,16"
+                          BoxShadow="0 4 16 0 #66000000">
+                    <Image Source="{Binding}"
+                           Stretch="Uniform"
+                           MaxWidth="680"/>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </LayoutTransformControl>
+        </ScrollViewer>
+      </Panel>
+    </Border>
+
+    <!-- Footer -->
+    <Border Grid.Row="1"
+            Background="#1F1F1F"
+            BorderBrush="#333333"
+            BorderThickness="0,1,0,0"
+            Padding="16,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Center">
+          <Button Content="{Binding BtnZoomOut}"
+                  Command="{Binding ZoomOutCommand}"
+                  MinWidth="36"
+                  MinHeight="34"
+                  ToolTip.Tip="Zoom arrière"/>
+          <Button Content="{Binding ZoomLabel}"
+                  Command="{Binding ZoomResetCommand}"
+                  MinWidth="64"
+                  MinHeight="34"
+                  ToolTip.Tip="Réinitialiser le zoom"/>
+          <Button Content="{Binding BtnZoomIn}"
+                  Command="{Binding ZoomInCommand}"
+                  MinWidth="36"
+                  MinHeight="34"
+                  ToolTip.Tip="Zoom avant"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    Spacing="10">
+          <Button Content="{Binding BtnCancel}"
+                  Command="{Binding CancelCommand}"
+                  MinWidth="100"
+                  MinHeight="34"/>
+          <Button Content="{Binding BtnPrint}"
+                  Command="{Binding PrintCommand}"
+                  IsEnabled="{Binding !IsPrinting}"
+                  MinWidth="110"
+                  MinHeight="34"
+                  Classes="accent"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

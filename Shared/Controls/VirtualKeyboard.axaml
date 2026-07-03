@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GestionCommerciale.Shared.Controls.VirtualKeyboard"
+             x:Name="KeyboardControl">
+  <UserControl.Styles>
+    <Style Selector="Button.key">
+      <Setter Property="MinWidth" Value="38"/>
+      <Setter Property="MinHeight" Value="38"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Margin" Value="1"/>
+      <Setter Property="Padding" Value="4,0"/>
+    </Style>
+    <Style Selector="Button.key-wide">
+      <Setter Property="MinWidth" Value="64"/>
+      <Setter Property="MinHeight" Value="38"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Margin" Value="1"/>
+      <Setter Property="Padding" Value="4,0"/>
+    </Style>
+  </UserControl.Styles>
+  <Border CornerRadius="8" BorderThickness="1" Padding="8" Background="{DynamicResource CourseraSurfaceBrush}"
+          BorderBrush="{DynamicResource CourseraBorderBrush}">
+    <StackPanel Spacing="4">
+      <WrapPanel x:Name="AlphaRow1" HorizontalAlignment="Center">
+        <Button Classes="key" Content="Q" Tag="q" Click="OnKeyClick"/>
+        <Button Classes="key" Content="W" Tag="w" Click="OnKeyClick"/>
+        <Button Classes="key" Content="E" Tag="e" Click="OnKeyClick"/>
+        <Button Classes="key" Content="R" Tag="r" Click="OnKeyClick"/>
+        <Button Classes="key" Content="T" Tag="t" Click="OnKeyClick"/>
+        <Button Classes="key" Content="Y" Tag="y" Click="OnKeyClick"/>
+        <Button Classes="key" Content="U" Tag="u" Click="OnKeyClick"/>
+        <Button Classes="key" Content="I" Tag="i" Click="OnKeyClick"/>
+        <Button Classes="key" Content="O" Tag="o" Click="OnKeyClick"/>
+        <Button Classes="key" Content="P" Tag="p" Click="OnKeyClick"/>
+      </WrapPanel>
+      <WrapPanel x:Name="AlphaRow2" HorizontalAlignment="Center">
+        <Button Classes="key" Content="A" Tag="a" Click="OnKeyClick"/>
+        <Button Classes="key" Content="S" Tag="s" Click="OnKeyClick"/>
+        <Button Classes="key" Content="D" Tag="d" Click="OnKeyClick"/>
+        <Button Classes="key" Content="F" Tag="f" Click="OnKeyClick"/>
+        <Button Classes="key" Content="G" Tag="g" Click="OnKeyClick"/>
+        <Button Classes="key" Content="H" Tag="h" Click="OnKeyClick"/>
+        <Button Classes="key" Content="J" Tag="j" Click="OnKeyClick"/>
+        <Button Classes="key" Content="K" Tag="k" Click="OnKeyClick"/>
+        <Button Classes="key" Content="L" Tag="l" Click="OnKeyClick"/>
+      </WrapPanel>
+      <WrapPanel x:Name="AlphaRow3" HorizontalAlignment="Center">
+        <Button Classes="key" Content="Z" Tag="z" Click="OnKeyClick"/>
+        <Button Classes="key" Content="X" Tag="x" Click="OnKeyClick"/>
+        <Button Classes="key" Content="C" Tag="c" Click="OnKeyClick"/>
+        <Button Classes="key" Content="V" Tag="v" Click="OnKeyClick"/>
+        <Button Classes="key" Content="B" Tag="b" Click="OnKeyClick"/>
+        <Button Classes="key" Content="N" Tag="n" Click="OnKeyClick"/>
+        <Button Classes="key" Content="M" Tag="m" Click="OnKeyClick"/>
+        <Button Classes="key-wide" Content="⌫" Click="OnBackspace"/>
+      </WrapPanel>
+      <WrapPanel HorizontalAlignment="Center">
+        <Button Classes="key" Content="1" Tag="1" Click="OnKeyClick"/>
+        <Button Classes="key" Content="2" Tag="2" Click="OnKeyClick"/>
+        <Button Classes="key" Content="3" Tag="3" Click="OnKeyClick"/>
+        <Button Classes="key" Content="4" Tag="4" Click="OnKeyClick"/>
+        <Button Classes="key" Content="5" Tag="5" Click="OnKeyClick"/>
+        <Button Classes="key" Content="6" Tag="6" Click="OnKeyClick"/>
+        <Button Classes="key" Content="7" Tag="7" Click="OnKeyClick"/>
+        <Button Classes="key" Content="8" Tag="8" Click="OnKeyClick"/>
+        <Button Classes="key" Content="9" Tag="9" Click="OnKeyClick"/>
+        <Button Classes="key" Content="0" Tag="0" Click="OnKeyClick"/>
+      </WrapPanel>
+      <WrapPanel HorizontalAlignment="Center">
+        <Button Classes="key-wide" Content="⌫" Click="OnBackspace"/>
+        <Button x:Name="SpaceBtn" Classes="key-wide" Content="Espace" Click="OnSpace"/>
+        <Button Classes="key-wide" Content="." Tag="." Click="OnKeyClick"/>
+        <Button Classes="key-wide" Content="✕" Click="OnClear"/>
+        <Button Classes="key-wide" Content="▲" Click="OnClose"/>
+      </WrapPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

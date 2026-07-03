@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Stock.ViewModels"
+             xmlns:m="using:GestionCommerciale.Modules.Stock.Models"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             xmlns:shared="using:GestionCommerciale.Shared.Views"
+             x:Class="GestionCommerciale.Modules.Stock.Views.ProduitsView"
+             x:DataType="vm:ProduitsViewModel">
+  <Grid ColumnDefinitions="440,*">
+    <Border Padding="12" CornerRadius="8" BorderBrush="#28000000" BorderThickness="1"
+            Background="#06000000">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <WrapPanel Margin="0,0,0,12">
+          <Button Content="{Binding BtnNewProduct}" MinWidth="110" Padding="6,4" Margin="0,0,6,4" Command="{Binding NewProduitCommand}"/>
+          <Button Content="{Binding BtnExportCsv}" MinWidth="90" Padding="6,4" Margin="0,0,6,4" Command="{Binding ExportCsvCommand}"/>
+          <Button Content="{Binding BtnImportCsv}" MinWidth="90" Padding="6,4" Margin="0,0,6,4" Command="{Binding ImportCsvCommand}"/>
+        </WrapPanel>
+        <TextBlock Grid.Row="1" Text="{Binding HelpList}"
+                   TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="2" Text="{Binding ProductSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 Watermark="{Binding WmSearch}" Margin="0,0,0,8"/>
+        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto">
+          <Border Grid.Row="0" Background="#12000000" CornerRadius="4,4,0,0" Padding="10,8" BorderBrush="#20000000" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="120,*,64,64">
+              <TextBlock Text="{Binding ColRef}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBlock Grid.Column="1" Text="{Binding ColDesignation}" FontWeight="SemiBold" FontSize="12" Margin="8,0,0,0"/>
+              <TextBlock Grid.Column="2" Text="{Binding ColStk}" FontWeight="SemiBold" FontSize="12" TextAlignment="Right"/>
+              <TextBlock Grid.Column="3" Text="{Binding ColMin}" FontWeight="SemiBold" FontSize="12" TextAlignment="Right"/>
+            </Grid>
+          </Border>
+          <ListBox Grid.Row="1" ItemsSource="{Binding Produits}" SelectedItem="{Binding SelectedProduit}"
+                   BorderThickness="0" Background="Transparent">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="10,8"/>
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="m:Produit">
+                <Grid ColumnDefinitions="120,*,64,64">
+                  <TextBlock Text="{Binding Reference}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Designation}" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" Margin="8,0,0,0"/>
+                  <TextBlock Grid.Column="2" Text="{Binding StockActuel, StringFormat={}{0:N0}}"
+                             TextAlignment="Right" VerticalAlignment="Center" FontSize="11"
+                             Foreground="{Binding ., Converter={x:Static conv:StockMinForegroundConverter.Instance}}"/>
+                  <TextBlock Grid.Column="3" Text="{Binding StockMinimum, StringFormat={}{0:N0}}"
+                             TextAlignment="Right" VerticalAlignment="Center" FontSize="11" Opacity="0.85"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <shared:ListPaginationBar Grid.Row="2" DataContext="{Binding Pagination}"/>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Border Grid.Column="1" Margin="16,0,0,0" Padding="12,10,12,12" CornerRadius="8"
+            BorderBrush="#28000000" BorderThickness="1"
+            Background="#06000000">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="8" VerticalAlignment="Top">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2" Margin="0,0,12,0" VerticalAlignment="Top">
+              <TextBlock Text="{Binding LblFicheTitle}" FontSize="15" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding LblDraftHint}"
+                         FontSize="12" Opacity="0.8" TextWrapping="Wrap"
+                         IsVisible="{Binding IsNewDraft}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                        VerticalAlignment="Top" Spacing="8">
+              <StackPanel VerticalAlignment="Center" Spacing="6">
+                <Button Classes="pos-qty" Content="+" ToolTip.Tip="{Binding BtnChooseImage}"
+                        Command="{Binding PickImageCommand}"
+                        IsEnabled="{Binding FicheEditable}"/>
+                <Button Classes="pos-delete" ToolTip.Tip="{Binding BtnRemovePhoto}"
+                        Command="{Binding ClearFicheImageCommand}"
+                        IsEnabled="{Binding CanRemoveFicheImage}">
+                  <Viewbox Width="14" Height="14">
+                    <Path Fill="{DynamicResource CourseraDangerBrush}"
+                          Data="M6,7 L6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z"/>
+                  </Viewbox>
+                </Button>
+              </StackPanel>
+              <Border Width="120" Height="120" CornerRadius="8" BorderBrush="#28000000" BorderThickness="1"
+                      Background="#0C000000" ClipToBounds="True" ToolTip.Tip="{Binding LblPhoto}">
+                <Image Source="{Binding FicheImagePreview}" Stretch="Uniform"/>
+              </Border>
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding LblReference}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBox Text="{Binding FicheReference}" Watermark="{Binding WmRefExample}"
+                       IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblDesignation}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBox Text="{Binding FicheDesignation}" Watermark="{Binding WmLibelle}"
+                       IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblBarcode}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBox Text="{Binding FicheCodeBarre}" Watermark="{Binding WmBarcodeExample}"
+                       IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Margin="0,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblUnite}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBox Text="{Binding FicheUnite}"
+                       IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="1" Margin="16,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblStockActuel}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBlock Text="{Binding FicheStockActuel, StringFormat={}{0:N2}}" VerticalAlignment="Center" Padding="4,8"/>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Margin="0,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblPrixAchat}" FontWeight="SemiBold" FontSize="12"/>
+              <NumericUpDown Value="{Binding FichePrixAchatHt}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+              <TextBlock Text="{Binding LblPrixAchatTtc}" FontWeight="SemiBold" FontSize="11" Opacity="0.7" Margin="0,2,0,0"/>
+              <NumericUpDown Value="{Binding FichePrixAchatTtc}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Grid.Column="1" Margin="16,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblPrixVente}" FontWeight="SemiBold" FontSize="12"/>
+              <NumericUpDown Value="{Binding FichePrixVenteHt}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+              <TextBlock Text="{Binding LblPrixVenteTtc}" FontWeight="SemiBold" FontSize="11" Opacity="0.7" Margin="0,2,0,0"/>
+              <NumericUpDown Value="{Binding FichePrixVenteTtc}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="4" Margin="0,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblTva}" FontWeight="SemiBold" FontSize="12"/>
+              <NumericUpDown Value="{Binding FicheTauxTva}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="4" Grid.Column="1" Margin="16,6,0,0" Spacing="4">
+              <TextBlock Text="{Binding LblStockMin}" FontWeight="SemiBold" FontSize="12"/>
+              <NumericUpDown Value="{Binding FicheStockMinimum}" FormatString="N2" Minimum="0"
+                             IsEnabled="{Binding FicheEditable}"/>
+            </StackPanel>
+            <CheckBox Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0"
+                      Content="{Binding ChkProductActive}" IsChecked="{Binding FicheActif}"
+                      IsEnabled="{Binding FicheEditable}"/>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+            <Button Content="{Binding BtnSaveSheet}" MinWidth="180" Padding="12,6"
+                    Command="{Binding SaveFicheCommand}"
+                    IsEnabled="{Binding FicheEditable}"/>
+            <Button Content="{Binding BtnDeleteProduct}" MinWidth="140" Padding="12,6"
+                    Command="{Binding DeleteSelectedProduitCommand}"
+                    IsEnabled="{Binding CanDeleteSelectedProduit}"/>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>

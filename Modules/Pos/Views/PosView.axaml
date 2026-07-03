@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Pos.ViewModels"
+             xmlns:models="using:GestionCommerciale.Modules.Stock.Models"
+             xmlns:tiers="using:GestionCommerciale.Modules.Tiers.Models"
+             xmlns:controls="using:GestionCommerciale.Shared.Controls"
+             xmlns:converters="using:GestionCommerciale.Shared.Converters"
+             x:Class="GestionCommerciale.Modules.Pos.Views.PosView"
+             x:DataType="vm:PosViewModel"
+             x:Name="ThisControl">
+  <Grid>
+    <!-- Main content -->
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16">
+      <!-- Search -->
+      <TextBox x:Name="SearchBox" Grid.Row="0" Watermark="{Binding SearchWatermark}" Text="{Binding SearchText}"
+               TextChanged="OnSearchTextChanged" KeyDown="OnSearchKeyDown" Margin="0,0,0,12"/>
+
+      <!-- Product quick list -->
+      <ListBox Grid.Row="1" ItemsSource="{Binding SearchResults}" MaxHeight="180"
+               SelectedItem="{Binding SelectedProduct}" Margin="0,0,0,12"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ProductSearchRow">
+            <Border Padding="8 6" CornerRadius="6" BorderThickness="1"
+                    Background="{DynamicResource CourseraSurfaceBrush}">
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <StackPanel Grid.Column="0">
+                  <TextBlock Text="{Binding Reference}" FontWeight="SemiBold" FontSize="13"/>
+                  <TextBlock Text="{Binding Designation}" Classes="subtle" FontSize="12"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding PrixVenteTtc, StringFormat='{}{0:N2} DH TTC'}"
+                           VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,12,0" />
+                <Button Grid.Column="2" Content="+" VerticalAlignment="Center" Classes="primary"
+                        Command="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).AddProductCommand}"
+                        CommandParameter="{Binding .}"/>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <!-- Cart -->
+      <Border Grid.Row="2" CornerRadius="8" BorderThickness="1" Margin="0,0,0,12"
+              Background="{DynamicResource CourseraSurfaceBrush}">
+        <Grid RowDefinitions="Auto,*" Margin="8">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+            <TextBlock Grid.Column="0" Text="{Binding CartTitle}" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Content="{Binding BtnDiscounts}" Command="{Binding ToggleDiscountsCommand}"
+                    MinHeight="28" Padding="12,4" FontSize="12"/>
+          </Grid>
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Cart}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CartLineRow">
+                  <Border Classes="pos-cart-line">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+                      <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Designation}" FontWeight="SemiBold" FontSize="13"/>
+                        <TextBlock Text="{Binding Reference}" Classes="subtle" FontSize="11"/>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Classes="pos-cart-unit-price"
+                                 Text="{Binding PrixUnitaireTtc, StringFormat='{}{0:N2} DH'}"
+                                 Margin="0,0,12,0"/>
+                      <Border Grid.Column="2" Classes="pos-inline-group" Margin="0,0,12,0">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto">
+                          <Button Grid.Column="0" Content="−" Classes="pos-qty"
+                                  Command="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).DecreaseQtyCommand}"
+                                  CommandParameter="{Binding .}"/>
+                          <Border Grid.Column="1" Classes="pos-inline-sep"/>
+                          <NumericUpDown Grid.Column="2" x:Name="QtyInput" Classes="pos-qty-value"
+                                          Value="{Binding Quantite}" FormatString="N2" Minimum="0"
+                                          ShowButtonSpinner="False"/>
+                          <Border Grid.Column="3" Classes="pos-inline-sep"/>
+                          <Button Grid.Column="4" Content="+" Classes="pos-qty"
+                                  Command="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).IncreaseQtyCommand}"
+                                  CommandParameter="{Binding .}"/>
+                        </Grid>
+                      </Border>
+                      <Border Grid.Column="3" Classes="pos-inline-group" Margin="0,0,12,0"
+                              IsVisible="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).ShowDiscounts}">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                           <NumericUpDown Grid.Column="0" Classes="pos-discount-pct" Value="{Binding RemisePct}"
+                                          FormatString="N0" Minimum="0" Maximum="100"/>
+                          <TextBlock Grid.Column="1" Text="%" Classes="pos-inline-label-tight"/>
+                          <Border Grid.Column="2" Classes="pos-inline-sep"/>
+                          <TextBlock Grid.Column="3" Text="−" Classes="pos-discount-minus"/>
+                           <NumericUpDown Grid.Column="4" Classes="pos-discount-amount" Value="{Binding RemiseMontant}"
+                                          FormatString="N2" Minimum="0"/>
+                          <TextBlock Grid.Column="5" Text="DH" Classes="pos-inline-label-tight" Margin="0,0,8,0"/>
+                        </Grid>
+                      </Border>
+                      <TextBlock Grid.Column="4" Classes="pos-cart-line-total"
+                                 Text="{Binding MontantTtc, StringFormat='{}{0:N2} DH'}"
+                                 Margin="0,0,10,0"/>
+                      <Button Grid.Column="5" Classes="pos-cart-delete" ToolTip.Tip="Supprimer"
+                              Command="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).RemoveProductCommand}"
+                              CommandParameter="{Binding .}">
+                        <Viewbox Width="16" Height="16">
+                          <Path x:Name="DeleteIconPath" Fill="{DynamicResource CourseraDangerBrush}"
+                                Data="M6,7 L6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z"/>
+                        </Viewbox>
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- Footer: client + split payments + total + actions -->
+      <Border Grid.Row="3" CornerRadius="8" BorderThickness="1"
+              Background="{DynamicResource CourseraSurfaceBrush}" Padding="14">
+        <Grid RowDefinitions="Auto,Auto">
+          <!-- Row 0: Client + payment splits (fixed 40px row for alignment) -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Height="40" Margin="0,0,0,10">
+            <AutoCompleteBox x:Name="ClientBox" Grid.Column="0" Classes="pos-footer-input"
+                             Margin="0,0,12,0"
+                             MinimumPrefixLength="1" MaxDropDownHeight="200"
+                             Watermark="{Binding WmClientSearch}"
+                             ItemsSource="{Binding Clients}"
+                             ItemFilter="{Binding PartyAutocompleteFilter}"
+                             SelectedItem="{Binding SelectedClient, Mode=TwoWay}">
+              <AutoCompleteBox.ValueMemberBinding>
+                <Binding Path="Nom"/>
+              </AutoCompleteBox.ValueMemberBinding>
+              <AutoCompleteBox.ItemTemplate>
+                <DataTemplate DataType="tiers:Tiers">
+                  <TextBlock Text="{Binding Nom}"/>
+                </DataTemplate>
+              </AutoCompleteBox.ItemTemplate>
+            </AutoCompleteBox>
+
+            <ScrollViewer Grid.Column="1" Height="40" VerticalAlignment="Center"
+                          HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding PaymentSplits}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PaymentSplitRow">
+                    <Border Classes="pos-payment-chip">
+                      <Grid ColumnDefinitions="Auto,1,Auto,Auto,Auto" VerticalAlignment="Center">
+                        <ComboBox Grid.Column="0" ItemsSource="{Binding ModesPaiement}" SelectedItem="{Binding Mode}">
+                          <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock Text="{Binding ., Converter={StaticResource ModePaiementLabelConverter}}" FontSize="13"/>
+                            </DataTemplate>
+                          </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Border Grid.Column="1" Width="1" Height="20" Margin="6,0"
+                                Background="{DynamicResource CourseraBorderBrush}" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Column="2" x:Name="SplitMontantInput" Value="{Binding Montant}"
+                                       FormatString="N2" Minimum="0"/>
+                        <TextBlock Grid.Column="3" Text="DH" Classes="pos-payment-suffix"/>
+                        <Button Grid.Column="4" Classes="pos-delete" ToolTip.Tip="Retirer"
+                                IsVisible="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).CanRemovePaymentSplit}"
+                                Command="{Binding $parent[UserControl].((vm:PosViewModel)DataContext).RemovePaymentSplitCommand}"
+                                CommandParameter="{Binding .}">
+                          <Viewbox Width="12" Height="12">
+                            <Path Fill="{DynamicResource CourseraDangerBrush}"
+                                  Data="M6,7 L6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z"/>
+                          </Viewbox>
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <Button Grid.Column="2" Classes="pos-add-split" Command="{Binding AddPaymentSplitCommand}"
+                    Margin="12,0,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="+" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding BtnAddPaymentSplit}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Row 1: Discount + Total + change + actions -->
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto,Auto">
+            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0"
+                        IsVisible="{Binding ShowDiscounts}">
+              <TextBlock Text="{Binding LabelRemiseGlobale}" FontSize="11" Classes="subtle"/>
+              <NumericUpDown x:Name="RemiseGlobaleInput" Value="{Binding RemiseGlobale}" FormatString="N2" Minimum="0" Maximum="100"
+                             MinWidth="70" MinHeight="32" FontSize="14" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0"
+                        IsVisible="{Binding ShowDiscounts}">
+              <TextBlock Text="{Binding LabelRemiseGlobaleMontant}" FontSize="11" Classes="subtle"/>
+              <NumericUpDown x:Name="RemiseGlobaleMontantInput" Value="{Binding RemiseGlobaleMontant}" FormatString="N2" Minimum="0"
+                             MinWidth="90" MinHeight="32" FontSize="14" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,16,0">
+              <TextBlock Text="{Binding TotalLabel}" FontSize="13" Classes="subtle"/>
+              <TextBlock Text="{Binding TotalTtc, StringFormat='{}{0:N2} DH'}" FontWeight="Bold" FontSize="22"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,0,16,0">
+              <TextBlock Text="{Binding LabelMontantRecu}" FontSize="11" Classes="subtle"/>
+              <NumericUpDown x:Name="MontantRecuInput" Value="{Binding MontantRecu}" FormatString="N2" Minimum="0"
+                             MinWidth="110" MinHeight="32" FontSize="14" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="0,0,24,0">
+              <TextBlock Text="{Binding LabelResteARendre}" FontSize="11" Classes="subtle"/>
+              <TextBlock Text="{Binding ResteARendre, StringFormat='{}{0:N2} DH'}"
+                         FontWeight="Bold" FontSize="20"
+                         Foreground="{Binding ResteARendre, Converter={x:Static converters:PositiveNegativeForegroundConverter.Instance}}"/>
+            </StackPanel>
+
+            <Button Grid.Column="6" Content="{Binding BtnClearCart}" Command="{Binding ClearCartCommand}"
+                    MinWidth="100" Margin="0,0,8,0"/>
+            <Button Grid.Column="7" Content="{Binding BtnRefund}" Command="{Binding RefundCommand}"
+                    MinWidth="100" Margin="0,0,8,0"/>
+            <Button Grid.Column="8" Content="{Binding BtnCheckout}" Command="{Binding CheckoutCommand}"
+                    MinWidth="100" Classes="primary" IsEnabled="{Binding HasItems}"/>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

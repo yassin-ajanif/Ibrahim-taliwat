@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="using:GestionCommerciale.Shared.Helpers"
+             x:Class="GestionCommerciale.Shared.Views.ListPaginationBar"
+             x:DataType="helpers:PaginationHelper">
+  <UserControl.Styles>
+    <Style Selector="Button.pagination-nav">
+      <Setter Property="MinWidth" Value="32"/>
+      <Setter Property="MinHeight" Value="30"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="{DynamicResource CourseraSurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CourseraBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.pagination-nav:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CourseraSurfaceMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.pagination-nav:disabled">
+      <Setter Property="Opacity" Value="0.35"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Border Padding="10,8" Margin="0,8,0,0"
+          Background="{DynamicResource CourseraSurfaceMutedBrush}"
+          BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="8">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <TextBlock x:Name="TotalCountText" Grid.Column="0" VerticalAlignment="Center" FontSize="12"
+                 Foreground="{DynamicResource CourseraSubtleTextBrush}"/>
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                  HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Button x:Name="FirstButton" Classes="pagination-nav" Content="⏮"
+                Command="{Binding FirstPageCommand}" IsEnabled="{Binding HasPrevious}"/>
+        <Button x:Name="PreviousButton" Classes="pagination-nav" Content="‹"
+                Command="{Binding PreviousPageCommand}" IsEnabled="{Binding HasPrevious}"/>
+        <Border Padding="12,5" CornerRadius="6" Margin="4,0"
+                Background="{DynamicResource CourseraSurfaceBrush}"
+                BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding CurrentPage}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+            <TextBlock Text="/" FontSize="12" Opacity="0.45" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding TotalPages}" FontSize="13" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Border>
+        <Button x:Name="NextButton" Classes="pagination-nav" Content="›"
+                Command="{Binding NextPageCommand}" IsEnabled="{Binding HasNext}"/>
+        <Button x:Name="LastButton" Classes="pagination-nav" Content="⏭"
+                Command="{Binding LastPageCommand}" IsEnabled="{Binding HasNext}"/>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

@@ -1,0 +1,113 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Tiers.ViewModels"
+             x:Class="GestionCommerciale.Modules.Tiers.Views.TiersDetailView"
+             x:DataType="vm:TiersDetailViewModel">
+  <Grid ColumnDefinitions="260,*" Margin="0,0,0,8">
+    <ScrollViewer Grid.Column="0">
+      <StackPanel Spacing="8">
+        <Button Content="{Binding BtnBackList}" Command="{Binding BackCommand}" HorizontalAlignment="Left"/>
+        <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}"/>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmNom}"/>
+          <TextBox Watermark="{Binding WmNom}" Text="{Binding Nom}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmIce}"/>
+          <TextBox Watermark="{Binding WmIce}" Text="{Binding Ice}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmAdresse}"/>
+          <TextBox Watermark="{Binding WmAdresse}" Text="{Binding Adresse}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmVille}"/>
+          <TextBox Watermark="{Binding WmVille}" Text="{Binding Ville}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmTelephone}"/>
+          <TextBox Watermark="{Binding WmTelephone}" Text="{Binding Telephone}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmEmail}"/>
+          <TextBox Watermark="{Binding WmEmail}" Text="{Binding Email}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding WmConditions}"/>
+          <TextBox Watermark="{Binding WmConditions}" Text="{Binding ConditionsPaiement}"/>
+        </StackPanel>
+
+        <CheckBox Content="{Binding ChkActif}" IsChecked="{Binding Actif}"/>
+        <Button Content="{Binding BtnSave}" Command="{Binding SaveCommand}"/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <DockPanel Grid.Column="1" Margin="16,0,0,0" IsVisible="{Binding ShowLedger}">
+      <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+        <TextBlock Text="{Binding LblLedgerTitle}" FontWeight="SemiBold" FontSize="16"/>
+        <Grid ColumnDefinitions="*,Auto">
+          <Border Grid.Column="0"
+                  Padding="8,5"
+                  Background="#DBEAFE"
+                  BorderBrush="#3B82F6"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding LblSoldeActuel}" FontWeight="SemiBold" FontSize="12" Foreground="#1E40AF" VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding SoldeActuelText}" FontWeight="SemiBold" FontSize="13" Foreground="#1E40AF" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+          <Button Grid.Column="1" Content="{Binding BtnPdfLedger}" Command="{Binding ExportLedgerPdfCommand}"/>
+        </Grid>
+      </StackPanel>
+
+      <TextBlock DockPanel.Dock="Top" Text="{Binding LblLedgerSaveFirst}" Classes="subtle"
+                 IsVisible="{Binding ShowLedgerSaveFirst}" Margin="0,8,0,0"/>
+      <TextBlock DockPanel.Dock="Top" Text="{Binding LblLedgerEmpty}" Classes="subtle"
+                 IsVisible="{Binding ShowLedgerEmpty}" Margin="0,8,0,0"/>
+
+      <Border Padding="12" Background="{DynamicResource CourseraSurfaceBrush}"
+              BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="12">
+        <ScrollViewer>
+          <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="90,2*,1.2*,90,90,100" Margin="0,0,0,4">
+              <TextBlock Grid.Column="0" Text="{Binding LblLedgerDate}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBlock Grid.Column="1" Text="{Binding LblLedgerDesignation}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBlock Grid.Column="2" Text="{Binding LblLedgerObservation}" FontWeight="SemiBold" FontSize="12"/>
+              <TextBlock Grid.Column="3" Text="{Binding LblLedgerDebit}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Right"/>
+              <TextBlock Grid.Column="4" Text="{Binding LblLedgerCredit}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Right"/>
+              <TextBlock Grid.Column="5" Text="{Binding LblLedgerBalance}" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Right"/>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding LedgerRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ClientLedgerDisplayRow">
+                  <Border Padding="8,6" Margin="0,0,0,2"
+                          Background="{DynamicResource CourseraSurfaceMutedBrush}" CornerRadius="6">
+                    <Grid ColumnDefinitions="90,2*,1.2*,90,90,100">
+                      <TextBlock Grid.Column="0" Text="{Binding DateText}" FontSize="12" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="{Binding Designation}" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                      <TextBlock Grid.Column="2" Text="{Binding Observation}" FontSize="12" Classes="subtle" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                      <TextBlock Grid.Column="3" Text="{Binding DebitText}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="4" Text="{Binding CreditText}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="5" Text="{Binding BalanceText}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </DockPanel>
+  </Grid>
+</UserControl>

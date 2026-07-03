@@ -1,0 +1,301 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Devis.ViewModels"
+             xmlns:m="using:GestionCommerciale.Modules.Tiers.Models"
+             xmlns:stock="using:GestionCommerciale.Modules.Stock.Models"
+             xmlns:gc="using:GestionCommerciale.Shared.Controls"
+             x:Class="GestionCommerciale.Modules.Devis.Views.DevisEditView"
+             x:DataType="vm:DevisEditViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.condition-remove">
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="MinWidth" Value="32"/>
+      <Setter Property="MinHeight" Value="32"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Background" Value="{DynamicResource CourseraDangerBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="FontSize" Value="16"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Button.condition-remove /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.condition-remove:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#B91C1C"/>
+    </Style>
+    <Style Selector="Button.condition-remove:disabled">
+      <Setter Property="Opacity" Value="0.45"/>
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer>
+    <StackPanel Spacing="10">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{Binding BtnBack}" Command="{Binding BackCommand}"/>
+        <Button Content="{Binding BtnSave}" Command="{Binding SaveCommand}" IsEnabled="{Binding !IsReadOnly}"/>
+        <Button Content="{Binding BtnToBl}" Command="{Binding ToBLCommand}"/>
+        <Button Content="{Binding BtnPdf}" Command="{Binding ExportPdfCommand}"/>
+        <Button Content="{Binding BtnPrint}" Command="{Binding PrintCommand}"/>
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <Border Background="{DynamicResource CourseraSurfaceBrush}" CornerRadius="8,8,0,0" Padding="10,8">
+          <Border.ContextMenu>
+            <ContextMenu Opening="OnHeaderContextMenuOpening">
+              <MenuItem Header="{Binding MenuDeleteDevis}" Command="{Binding RemoveDevisCommand}"/>
+            </ContextMenu>
+          </Border.ContextMenu>
+          <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Numero}" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="{Binding LblDateDevis}" VerticalAlignment="Center" Opacity="0.7"/>
+              <DatePicker SelectedDate="{Binding Date}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="{Binding LblValableJusqu}" VerticalAlignment="Center" Opacity="0.7"/>
+              <DatePicker SelectedDate="{Binding DateValidite}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <TextBlock Text="{Binding LblExpired}" Foreground="DarkRed" FontWeight="SemiBold" IsVisible="{Binding IsExpire}"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBlock Text="{Binding LblClient}" VerticalAlignment="Center" Opacity="0.7"/>
+        <AutoCompleteBox MinWidth="260" MaxWidth="420" VerticalAlignment="Center"
+                         MinimumPrefixLength="1" MaxDropDownHeight="320"
+                         Watermark="{Binding WmClientSearch}"
+                         ItemsSource="{Binding Clients}"
+                         ItemFilter="{Binding PartyAutocompleteFilter}"
+                         SelectedItem="{Binding SelectedClient, Mode=TwoWay}"
+                         IsEnabled="{Binding !IsReadOnly}">
+          <AutoCompleteBox.ValueMemberBinding>
+            <Binding Path="Nom"/>
+          </AutoCompleteBox.ValueMemberBinding>
+          <AutoCompleteBox.ItemTemplate>
+            <DataTemplate DataType="m:Tiers">
+              <TextBlock Text="{Binding Nom}" TextTrimming="CharacterEllipsis"/>
+            </DataTemplate>
+          </AutoCompleteBox.ItemTemplate>
+        </AutoCompleteBox>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <TextBlock Text="{Binding LblAddProduct}" VerticalAlignment="Center" Opacity="0.7"/>
+        <AutoCompleteBox MinWidth="360" MaxWidth="520" VerticalAlignment="Center"
+                         MinimumPrefixLength="1" MaxDropDownHeight="320"
+                         Watermark="{Binding WmAddProduct}"
+                         ItemsSource="{Binding Produits}"
+                         ItemFilter="{Binding ProduitAutocompleteFilter}"
+                         Text="{Binding AddLineSearchText, Mode=TwoWay}"
+                         SelectedItem="{Binding AddLineCatalogPick, Mode=TwoWay}"
+                         IsEnabled="{Binding !IsReadOnly}">
+          <AutoCompleteBox.ValueMemberBinding>
+            <Binding Path="Reference"/>
+          </AutoCompleteBox.ValueMemberBinding>
+          <AutoCompleteBox.ItemTemplate>
+            <DataTemplate DataType="stock:Produit">
+              <TextBlock TextWrapping="Wrap">
+                <TextBlock.Text>
+                  <MultiBinding StringFormat="{}{0} — {1}">
+                    <Binding Path="Reference"/>
+                    <Binding Path="Designation"/>
+                  </MultiBinding>
+                </TextBlock.Text>
+              </TextBlock>
+            </DataTemplate>
+          </AutoCompleteBox.ItemTemplate>
+        </AutoCompleteBox>
+        <Button Content="{Binding BtnRemoveSelectedLine}" VerticalAlignment="Center" Command="{Binding RemoveSelectedLineCommand}" IsEnabled="{Binding !IsReadOnly}"/>
+      </StackPanel>
+      <TextBlock Text="{Binding LblDocLineColumnsHint}" FontSize="11" Opacity="0.75" FontWeight="SemiBold"/>
+      <WrapPanel Orientation="Horizontal">
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowReference}" Content="{Binding LblDocColRef}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowDesignation}" Content="{Binding LblDocColDesignation}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowQuantite}" Content="{Binding LblDocColQte}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowConditionnement}" Content="{Binding LblDocColCond}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowPuHt}" Content="{Binding LblDocColPuHt}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowRemise}" Content="{Binding LblDocColRemise}" IsVisible="{Binding LineGridColumns.SupportsLineRemise}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowTva}" Content="{Binding LblDocColTva}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowMontantHt}" Content="{Binding LblDocColMontantHt}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowMontantTtc}" Content="{Binding LblDocColMontantTtc}"/>
+      </WrapPanel>
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <Grid MinWidth="880" RowDefinitions="Auto,*">
+          <Border Grid.Row="0" BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="8,8,0,0"
+                  Background="{DynamicResource CourseraSurfaceMutedBrush}" Padding="8,8">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColRef}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColDesignation}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColQte}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColCond}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColPuHt}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColRemise}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColTva}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColMontantHt}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColMontantTtc}"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="{Binding LblDocColRef}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowReference}"/>
+              <TextBlock Grid.Column="1" Text="{Binding LblDocColDesignation}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowDesignation}"/>
+              <TextBlock Grid.Column="2" Text="{Binding LblDocColQte}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowQuantite}"/>
+              <TextBlock Grid.Column="3" Text="{Binding LblDocColCond}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowConditionnement}"/>
+              <TextBlock Grid.Column="4" Text="{Binding LblDocColPuHt}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowPuHt}"/>
+              <TextBlock Grid.Column="5" Text="{Binding LblDocColRemise}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowRemise}"/>
+              <TextBlock Grid.Column="6" Text="{Binding LblDocColTva}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowTva}"/>
+              <TextBlock Grid.Column="7" Text="{Binding LblDocColMontantHt}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"
+                         IsVisible="{Binding LineGridColumns.ShowMontantHt}"/>
+              <TextBlock Grid.Column="8" Text="{Binding LblDocColMontantTtc}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right"
+                         IsVisible="{Binding LineGridColumns.ShowMontantTtc}"/>
+            </Grid>
+          </Border>
+          <ListBox Grid.Row="1" ItemsSource="{Binding Lignes}" SelectedItem="{Binding SelectedLine}" MinHeight="200"
+                   BorderThickness="1" BorderBrush="{DynamicResource CourseraBorderBrush}" CornerRadius="0,0,8,8"
+                   Background="{DynamicResource CourseraSurfaceBrush}">
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="vm:DevisLineRow">
+                <Border Padding="6,2" BorderBrush="#18000000" BorderThickness="0,0,0,1">
+                  <Grid MinHeight="34">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColRef}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColDesignation}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColQte}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColCond}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColPuHt}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColRemise}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColTva}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColMontantHt}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ColMontantTtc}"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             Text="{Binding Reference}"
+                             Watermark="Réf."
+                             Padding="6,4"
+                             Margin="0,0,8,0"
+                             IsReadOnly="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                             IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowReference}"/>
+                    <TextBox Grid.Column="1"
+                             Text="{Binding Designation}"
+                             Watermark="…"
+                             Padding="6,4"
+                             Margin="0,0,8,0"
+                             IsReadOnly="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                             IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowDesignation}"/>
+                    <NumericUpDown Grid.Column="2" ShowButtonSpinner="False" Value="{Binding Quantite}" FormatString="0.##" Minimum="0" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0"
+                                   IsEnabled="{Binding !$parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                                   IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowQuantite}"/>
+                    <TextBox Grid.Column="3" Text="{Binding Conditionnement}" Watermark="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).WmDocLineUnite}" Padding="6,4" Margin="0,0,8,0"
+                             IsReadOnly="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                             IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowConditionnement}"/>
+                    <NumericUpDown Grid.Column="4" ShowButtonSpinner="False" Value="{Binding PrixUnitaireHt}" FormatString="0.##" Minimum="0" Increment="0.01"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0"
+                                   IsEnabled="{Binding !$parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                                   IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowPuHt}"/>
+                    <NumericUpDown Grid.Column="5" ShowButtonSpinner="False" Value="{Binding Remise}" FormatString="N2" Minimum="0" Maximum="100" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0"
+                                   IsEnabled="{Binding !$parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                                   IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowRemise}"/>
+                    <NumericUpDown Grid.Column="6" ShowButtonSpinner="False" Value="{Binding TauxTva}" FormatString="0.##" Minimum="0" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0"
+                                   IsEnabled="{Binding !$parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"
+                                   IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowTva}"/>
+                    <TextBlock Grid.Column="7" Text="{Binding MontantHt, StringFormat=\{0:N2\}}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Margin="0,0,8,0" Opacity="0.9"
+                               IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowMontantHt}"/>
+                    <TextBlock Grid.Column="8" Text="{Binding MontantTtc, StringFormat=\{0:N2\}}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Opacity="0.9"
+                               IsVisible="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).LineGridColumns.ShowMontantTtc}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </ScrollViewer>
+      <Border Background="#E8F4FC" BorderBrush="#B8D4E8" BorderThickness="1" CornerRadius="8" Padding="12">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{Binding LblConditions}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Content="{Binding BtnAddCondition}" Command="{Binding AddConditionCommand}"
+                    IsEnabled="{Binding !IsReadOnly}" Classes="primary"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Conditions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:DevisConditionRow">
+                <Border Margin="0,0,0,8" Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6" Padding="8">
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                    <TextBox Grid.Row="0" Grid.Column="0" Margin="0,0,8,6"
+                             Text="{Binding Titre, Mode=TwoWay}"
+                             Watermark="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).WmConditionTitle}"
+                             Background="#F3F4F6" FontWeight="SemiBold"
+                             IsReadOnly="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"/>
+                    <Button Grid.Row="0" Grid.Column="1" Margin="0,0,0,6"
+                            Classes="condition-remove"
+                            Content="×"
+                            VerticalAlignment="Top"
+                            Command="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).RemoveConditionCommand}"
+                            CommandParameter="{Binding}"
+                            IsEnabled="{Binding !$parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"/>
+                    <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                             Text="{Binding Valeur, Mode=TwoWay}"
+                             Watermark="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).WmConditionValue}"
+                             AcceptsReturn="True" MinHeight="44" TextWrapping="Wrap"
+                             IsReadOnly="{Binding $parent[UserControl].((vm:DevisEditViewModel)DataContext).IsReadOnly}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+      <Grid Margin="0,8,0,0" ColumnDefinitions="*,16,Auto">
+        <TextBox Grid.Column="0"
+                 Watermark="{Binding WmNote}"
+                 Text="{Binding Note}"
+                 AcceptsReturn="True"
+                 MinHeight="88"
+                 VerticalContentAlignment="Top"
+                 VerticalAlignment="Stretch"
+                 IsReadOnly="{Binding IsReadOnly}"/>
+        <Border Grid.Column="2"
+                Padding="14,10"
+                MinWidth="220"
+                VerticalAlignment="Top"
+                Background="#EEF2FF"
+                BorderBrush="#C7D2FE"
+                BorderThickness="1"
+                CornerRadius="6"
+                BoxShadow="0 1 4 0 #18000000">
+          <StackPanel Spacing="6" HorizontalAlignment="Right">
+            <TextBlock Text="{Binding LblTotals}" FontSize="11" Opacity="0.65" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+            <TextBlock Text="{Binding TotalHtLabel}" FontSize="13" HorizontalAlignment="Right" IsVisible="{Binding ShowTotalTtc}"/>
+            <TextBlock Text="{Binding TotalHtLabel}"
+                       FontSize="17"
+                       FontWeight="Bold"
+                       Foreground="#3730A3"
+                       HorizontalAlignment="Right"
+                       IsVisible="{Binding !ShowTotalTtc}"/>
+            <TextBlock Text="{Binding TotalTvaLabel}" FontSize="13" HorizontalAlignment="Right" IsVisible="{Binding ShowTotalTva}"/>
+            <TextBlock Text="{Binding TotalTtcLabel}"
+                       FontSize="17"
+                       FontWeight="Bold"
+                       Foreground="#3730A3"
+                       HorizontalAlignment="Right"
+                       IsVisible="{Binding ShowTotalTtc}"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

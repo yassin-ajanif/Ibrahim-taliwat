@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>GestionCommerciale</RootNamespace>
+    <ApplicationIcon>Assets\faturati.ico</ApplicationIcon>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+  </PropertyGroup>
+
+  <!-- IDE / dotnet-watch C# hot reload (XAML uses HotAvalonia in Debug). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <EnableHotReload>true</EnableHotReload>
+    <HotAvalonia>true</HotAvalonia>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!-- dotnet watch: rebuild when Avalonia views change (not only .cs) -->
+  <ItemGroup>
+    <Watch Include="**\*.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Markup.Xaml.Loader" Version="11.1.0" PrivateAssets="All" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="HotAvalonia" Version="3.1.0" PrivateAssets="All" Publish="true" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
+    <PackageReference Include="PdfiumViewer.Updated" Version="2.14.5" />
+    <PackageReference Include="QuestPDF" Version="2025.7.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="Velopack" Version="1.2.0" />
+  </ItemGroup>
+</Project>

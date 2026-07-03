@@ -1,0 +1,370 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.FactureFournisseur.ViewModels"
+             xmlns:m="using:GestionCommerciale.Modules.Tiers.Models"
+             xmlns:stock="using:GestionCommerciale.Modules.Stock.Models"
+             x:Class="GestionCommerciale.Modules.FactureFournisseur.Views.FactureFournisseurEditView"
+             x:Name="ThisView"
+             x:DataType="vm:FactureFournisseurEditViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="10">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{Binding BtnBack}" Command="{Binding BackCommand}"/>
+        <Button Content="{Binding BtnSave}" Command="{Binding SaveDraftCommand}" IsEnabled="{Binding CanEditDraft}"/>
+        <Button Content="{Binding BtnPdf}" Command="{Binding ExportPdfCommand}"/>
+        <Button Content="{Binding BtnPrint}" Command="{Binding PrintCommand}"/>
+      </StackPanel>
+      <Border Background="{DynamicResource CourseraSurfaceBrush}" CornerRadius="8,8,0,0" Padding="10,8">
+        <Border.ContextMenu>
+          <ContextMenu Opening="OnHeaderContextMenuOpening">
+            <MenuItem Header="{Binding MenuDeleteFactureFournisseur}" Command="{Binding RemoveFactureFournisseurCommand}"/>
+          </ContextMenu>
+        </Border.ContextMenu>
+        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+          <TextBlock Grid.Column="0"
+                     Text="{Binding Numero}"
+                     FontWeight="Bold"
+                     FontSize="16"
+                     VerticalAlignment="Center"
+                     Margin="0,0,16,0"
+                     TextWrapping="NoWrap"
+                     TextTrimming="CharacterEllipsis"/>
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+            <TextBlock Text="{Binding LblFournisseur}" VerticalAlignment="Center" Opacity="0.7"/>
+            <AutoCompleteBox MinWidth="200"
+                             MaxWidth="420"
+                             VerticalAlignment="Center"
+                             MinimumPrefixLength="1"
+                             MaxDropDownHeight="320"
+                             Watermark="{Binding WmFournisseurSearch}"
+                             ItemsSource="{Binding Fournisseurs}"
+                             ItemFilter="{Binding PartyAutocompleteFilter}"
+                             SelectedItem="{Binding SelectedFournisseur, Mode=TwoWay}"
+                             IsEnabled="{Binding CanEditDraft}">
+              <AutoCompleteBox.ValueMemberBinding>
+                <Binding Path="Nom"/>
+              </AutoCompleteBox.ValueMemberBinding>
+              <AutoCompleteBox.ItemTemplate>
+                <DataTemplate DataType="m:Tiers">
+                  <TextBlock Text="{Binding Nom}" TextTrimming="CharacterEllipsis"/>
+                </DataTemplate>
+              </AutoCompleteBox.ItemTemplate>
+            </AutoCompleteBox>
+          </StackPanel>
+          <StackPanel Grid.Column="2"
+                      Orientation="Horizontal"
+                      Spacing="10"
+                      VerticalAlignment="Center"
+                      Margin="16,0,0,0">
+            <TextBlock Text="{Binding LblFactPayee}" VerticalAlignment="Center" Opacity="0.7"/>
+            <ToggleSwitch IsChecked="{Binding EstPayee, Mode=TwoWay}"
+                          OnContent="{Binding LblPaid}"
+                          OffContent="{Binding LblUnpaid}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding LblDateFacture}" VerticalAlignment="Center" Opacity="0.7"/>
+          <DatePicker SelectedDate="{Binding Date}"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding LblDateEcheance}" VerticalAlignment="Center" Opacity="0.7"/>
+          <DatePicker SelectedDate="{Binding DateEcheance}"/>
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBlock Text="{Binding LblLinkedBrs}" Opacity="0.7" VerticalAlignment="Center"/>
+        
+        <Button Content="{Binding BtnAddBr}" Command="{Binding ShowBrPickerCommand}" IsEnabled="{Binding CanEditDraft}"/>
+        
+        <ItemsControl ItemsSource="{Binding LinkedBrs}" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="4"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:LinkedBrRow">
+              <Border Padding="6,4" Background="#DBEAFE" BorderBrush="#3B82F6" BorderThickness="1" CornerRadius="6">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="{Binding Numero}" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#1E40AF"/>
+                  <Button Content="×" FontSize="12" Padding="2,0" MinWidth="0" MinHeight="0"
+                          ToolTip.Tip="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LblLinkedBrs}"
+                          Command="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).RemoveBrGroupCommand}"
+                          CommandParameter="{Binding}"
+                          Background="Transparent" Foreground="#666"/>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <AutoCompleteBox MinWidth="360" MaxWidth="520" VerticalAlignment="Center"
+                         MinimumPrefixLength="1" MaxDropDownHeight="320"
+                         Watermark="{Binding LblCatalogHintFactureFournisseur}"
+                         ItemsSource="{Binding Produits}"
+                         ItemFilter="{Binding ProduitAutocompleteFilter}"
+                         Text="{Binding AddLineSearchText, Mode=TwoWay}"
+                         SelectedItem="{Binding AddLineCatalogPick, Mode=TwoWay}"
+                         IsEnabled="{Binding CanEditDraft}">
+          <AutoCompleteBox.ValueMemberBinding>
+            <Binding Path="Reference"/>
+          </AutoCompleteBox.ValueMemberBinding>
+          <AutoCompleteBox.ItemTemplate>
+            <DataTemplate DataType="stock:Produit">
+              <TextBlock TextWrapping="Wrap">
+                <TextBlock.Text>
+                  <MultiBinding StringFormat="{}{0} — {1}">
+                    <Binding Path="Reference"/>
+                    <Binding Path="Designation"/>
+                  </MultiBinding>
+                </TextBlock.Text>
+              </TextBlock>
+            </DataTemplate>
+          </AutoCompleteBox.ItemTemplate>
+        </AutoCompleteBox>
+        <Button Content="{Binding BtnRemoveLine}" Command="{Binding RemoveSelectedLineCommand}" IsEnabled="{Binding CanEditDraft}"/>
+      </StackPanel>
+      <TextBlock Text="{Binding LblDocLineColumnsHint}" FontSize="11" Opacity="0.75" FontWeight="SemiBold"/>
+      <WrapPanel Orientation="Horizontal">
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowReference}" Content="{Binding LblDocColRef}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowDesignation}" Content="{Binding LblDocColDesignation}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowQuantite}" Content="{Binding LblDocColQte}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowConditionnement}" Content="{Binding LblDocColCond}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowPuHt}" Content="{Binding LblDocColPuHt}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowRemise}" Content="{Binding LblDocColRemise}" IsVisible="{Binding LineGridColumns.SupportsLineRemise}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowTva}" Content="{Binding LblDocColTva}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowMontantHt}" Content="{Binding LblDocColMontantHt}"/>
+        <CheckBox Margin="0,0,12,4" IsChecked="{Binding LineGridColumns.ShowMontantTtc}" Content="{Binding LblDocColMontantTtc}"/>
+      </WrapPanel>
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <Grid MinWidth="880" RowDefinitions="Auto,*">
+          <Border Grid.Row="0" BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="8,8,0,0"
+                  Background="{DynamicResource CourseraSurfaceMutedBrush}" Padding="8,8">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColRef}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColDesignation}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColQte}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColCond}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColPuHt}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColRemise}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColTva}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColMontantHt}"/>
+                <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColMontantTtc}"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="{Binding LblDocColRef}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowReference}"/>
+              <TextBlock Grid.Column="1" Text="{Binding LblDocColDesignation}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowDesignation}"/>
+              <TextBlock Grid.Column="2" Text="{Binding LblDocColQte}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowQuantite}"/>
+              <TextBlock Grid.Column="3" Text="{Binding LblDocColCond}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowConditionnement}"/>
+              <TextBlock Grid.Column="4" Text="{Binding LblDocColPuHt}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowPuHt}"/>
+              <TextBlock Grid.Column="5" Text="{Binding LblDocColRemise}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowRemise}"/>
+              <TextBlock Grid.Column="6" Text="{Binding LblDocColTva}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowTva}"/>
+              <TextBlock Grid.Column="7" Text="{Binding LblDocColMontantHt}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" IsVisible="{Binding LineGridColumns.ShowMontantHt}"/>
+              <TextBlock Grid.Column="8" Text="{Binding LblDocColMontantTtc}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" IsVisible="{Binding LineGridColumns.ShowMontantTtc}"/>
+            </Grid>
+          </Border>
+          <ListBox Grid.Row="1" ItemsSource="{Binding Lignes}" SelectedItem="{Binding SelectedLine}" MinHeight="200"
+                   BorderThickness="1" BorderBrush="{DynamicResource CourseraBorderBrush}" CornerRadius="0,0,8,8"
+                   Background="{DynamicResource CourseraSurfaceBrush}">
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="vm:FactureFournisseurLineRow">
+                <Border Padding="6,2" BorderBrush="#18000000" BorderThickness="0,0,0,1">
+                  <Grid MinHeight="34">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColRef}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColDesignation}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColQte}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColCond}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColPuHt}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColRemise}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColTva}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColMontantHt}"/>
+                      <ColumnDefinition Width="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ColMontantTtc}"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             Text="{Binding Reference}"
+                             Watermark="Réf."
+                             Padding="6,4"
+                             Margin="0,0,8,0"
+                             IsReadOnly="{Binding !$parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}"
+                             IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowReference}"/>
+                    <TextBox Grid.Column="1"
+                             Text="{Binding Designation}"
+                             Watermark="…"
+                             Padding="6,4"
+                             Margin="0,0,8,0"
+                             IsReadOnly="{Binding !$parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}"
+                             IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowDesignation}"/>
+                    <NumericUpDown Grid.Column="2" ShowButtonSpinner="False" Value="{Binding Quantite}" FormatString="0.##" Minimum="0" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0" IsEnabled="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowQuantite}"/>
+                    <TextBox Grid.Column="3" Text="{Binding Conditionnement}" Watermark="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).WmDocLineUnite}" Padding="6,4" Margin="0,0,8,0"
+                             IsReadOnly="{Binding !$parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowConditionnement}"/>
+                    <NumericUpDown Grid.Column="4" ShowButtonSpinner="False" Value="{Binding PrixUnitaireHt}" FormatString="0.##" Minimum="0" Increment="0.01"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0" IsEnabled="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowPuHt}"/>
+                    <NumericUpDown Grid.Column="5" ShowButtonSpinner="False" Value="{Binding Remise}" FormatString="N2" Minimum="0" Maximum="100" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0" IsEnabled="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowRemise}"/>
+                    <NumericUpDown Grid.Column="6" ShowButtonSpinner="False" Value="{Binding TauxTva}" FormatString="0.##" Minimum="0" Increment="1"
+                                   HorizontalAlignment="Stretch" Margin="0,0,8,0" IsEnabled="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).CanEditDraft}" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowTva}"/>
+                    <TextBlock Grid.Column="7" Text="{Binding MontantHt, StringFormat=\{0:N2\}}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Margin="0,0,8,0" Opacity="0.9" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowMontantHt}"/>
+                    <TextBlock Grid.Column="8" Text="{Binding MontantTtc, StringFormat=\{0:N2\}}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Opacity="0.9" IsVisible="{Binding $parent[UserControl].((vm:FactureFournisseurEditViewModel)DataContext).LineGridColumns.ShowMontantTtc}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </ScrollViewer>
+      <Grid Margin="0,8,0,0" ColumnDefinitions="*,16,Auto">
+        <Border Grid.Column="2"
+                Padding="14,10"
+                MinWidth="220"
+                VerticalAlignment="Top"
+                Background="#EEF2FF"
+                BorderBrush="#C7D2FE"
+                BorderThickness="1"
+                CornerRadius="6"
+                BoxShadow="0 1 4 0 #18000000">
+          <StackPanel Spacing="6" HorizontalAlignment="Right">
+            <TextBlock Text="{Binding LblTotals}" FontSize="11" Opacity="0.65" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+            <TextBlock Text="{Binding TotalHtLabel}" FontSize="13" HorizontalAlignment="Right" IsVisible="{Binding ShowTotalTtc}"/>
+            <TextBlock Text="{Binding TotalHtLabel}"
+                       FontSize="17"
+                       FontWeight="Bold"
+                       Foreground="#3730A3"
+                       HorizontalAlignment="Right"
+                       IsVisible="{Binding !ShowTotalTtc}"/>
+            <TextBlock Text="{Binding TotalTvaLabel}" FontSize="13" HorizontalAlignment="Right" IsVisible="{Binding ShowTotalTva}"/>
+            <TextBlock Text="{Binding TotalTtcLabel}"
+                       FontSize="17"
+                       FontWeight="Bold"
+                       Foreground="#3730A3"
+                       HorizontalAlignment="Right"
+                       IsVisible="{Binding ShowTotalTtc}"/>
+            <Border Height="1" Background="#C7D2FE" Margin="0,6,0,0" Opacity="0.6"/>
+            <TextBlock Text="{Binding MontantPayeLine}" FontSize="12" Opacity="0.75" HorizontalAlignment="Right"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <TextBlock Text="{Binding LblPaymentsRecorded}" FontWeight="SemiBold"/>
+      <ItemsControl ItemsSource="{Binding Paiements}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Spacing="8"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:FactureFournisseurPaiementRowViewModel">
+            <Border Padding="0,0,0,4" BorderBrush="#20000000" BorderThickness="0,0,0,1">
+              <StackPanel Spacing="0">
+              <WrapPanel Orientation="Horizontal" IsVisible="{Binding !IsEditing}">
+                <StackPanel Margin="0,0,14,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblMontant}" Opacity="0.65" FontSize="10"/>
+                  <TextBlock Text="{Binding Montant, StringFormat=\{0:N2\}}" VerticalAlignment="Center" MinHeight="24"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,14,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblPaymentDate}" Opacity="0.65" FontSize="10"/>
+                  <TextBlock Text="{Binding Date, StringFormat=\{0:d\}}" VerticalAlignment="Center" MinHeight="24"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,14,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblMode}" Opacity="0.65" FontSize="10"/>
+                  <TextBlock Text="{Binding Mode, Converter={StaticResource ModePaiementLabelConverter}}" VerticalAlignment="Center" MinHeight="24" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,14,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblReference}" Opacity="0.65" FontSize="10"/>
+                  <TextBlock Text="{Binding Reference}" VerticalAlignment="Center" MinHeight="24" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
+                  <Button Padding="8,6" MinWidth="36" MinHeight="32"
+                          ToolTip.Tip="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).PayEditTooltip}"
+                          Command="{Binding StartEditCommand}"
+                          IsEnabled="{Binding FactureFournisseurModifiable}">
+                    <Path Stretch="Uniform" Width="16" Height="16"
+                          Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm4.59-2.83l9.06-9.06 2.12 2.12-9.06 9.06H7.59v-2.12zM20.71 5.63l-1.34-1.34a.996.996 0 0 0-1.41 0l-1.12 1.12 3.75 3.75 1.12-1.12a.996.996 0 0 0 0-1.41z"
+                          Fill="{DynamicResource CourseraTextBrush}"/>
+                  </Button>
+                  <Button Content="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).BtnDelete}" Padding="10,6" MinHeight="32"
+                          Command="{Binding DeleteCommand}" IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                </StackPanel>
+              </WrapPanel>
+              <WrapPanel Orientation="Horizontal" IsVisible="{Binding IsEditing}">
+                <StackPanel Margin="0,0,10,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblMontant}" Opacity="0.65" FontSize="10"/>
+                  <NumericUpDown Width="92" MinHeight="32" Padding="8,5" FormatString="N2" Minimum="0" Increment="1"
+                                 Value="{Binding Montant, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,10,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblPaymentDate}" Opacity="0.65" FontSize="10"/>
+                  <DatePicker SelectedDate="{Binding Date, Mode=TwoWay}"
+                              MaxWidth="252" HorizontalAlignment="Left"
+                              IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,10,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblMode}" Opacity="0.65" FontSize="10"/>
+                  <ComboBox Width="118" MinHeight="32" ItemsSource="{Binding ModesPaiement}" SelectedItem="{Binding Mode, Mode=TwoWay}"
+                            IsEnabled="{Binding FactureFournisseurModifiable}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding ., Converter={StaticResource ModePaiementLabelConverter}}" TextTrimming="CharacterEllipsis"/>
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Margin="0,0,10,6" Spacing="1">
+                  <TextBlock Text="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).LblReference}" Opacity="0.65" FontSize="10"/>
+                  <TextBox Width="320" MinHeight="32" Padding="8,5" Watermark="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).WmRefShort}" Text="{Binding Reference, Mode=TwoWay}"
+                           IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
+                  <Button Content="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).BtnSave}" Padding="10,6" MinHeight="32"
+                          Command="{Binding SaveCommand}" IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                  <Button Content="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).BtnCancel}" Padding="10,6" MinHeight="32"
+                          Command="{Binding CancelEditCommand}" IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                  <Button Content="{Binding #ThisView.((vm:FactureFournisseurEditViewModel)DataContext).BtnDelete}" Padding="10,6" MinHeight="32"
+                          Command="{Binding DeleteCommand}" IsEnabled="{Binding FactureFournisseurModifiable}"/>
+                </StackPanel>
+              </WrapPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Text="{Binding LblNewPayment}" FontWeight="SemiBold"/>
+      <WrapPanel Orientation="Horizontal">
+        <StackPanel Margin="0,0,10,6" Spacing="1">
+          <TextBlock Text="{Binding LblMontant}" Opacity="0.65" FontSize="10"/>
+          <NumericUpDown Value="{Binding PaiementMontant, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         FormatString="N2" Minimum="0" Increment="1" Width="92" MinHeight="32" Padding="8,5"/>
+        </StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="1">
+          <TextBlock Text="{Binding LblPaymentDate}" Opacity="0.65" FontSize="10"/>
+          <DatePicker SelectedDate="{Binding PaiementDate, Mode=TwoWay}" MaxWidth="252" HorizontalAlignment="Left"/>
+        </StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="1">
+          <TextBlock Text="{Binding LblMode}" Opacity="0.65" FontSize="10"/>
+          <ComboBox ItemsSource="{Binding ModesPaiement}" SelectedItem="{Binding PaiementMode}" Width="118" MinHeight="32">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding ., Converter={StaticResource ModePaiementLabelConverter}}" TextTrimming="CharacterEllipsis"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="1">
+          <TextBlock Text="{Binding LblReference}" Opacity="0.65" FontSize="10"/>
+          <TextBox Watermark="{Binding WmRefShort}" Text="{Binding PaiementReference}" Width="320" MinHeight="32" Padding="8,5"/>
+        </StackPanel>
+        <Button Margin="0,0,0,6" Content="{Binding BtnAddPayment}" Padding="10,6" MinHeight="32" VerticalAlignment="Bottom"
+                Command="{Binding AddPaiementCommand}"/>
+      </WrapPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

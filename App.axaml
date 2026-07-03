@@ -1,0 +1,34 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GestionCommerciale.App"
+             xmlns:local="using:GestionCommerciale"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             xmlns:beh="using:GestionCommerciale.Shared.Behaviors"
+             RequestedThemeVariant="Light">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.Resources>
+        <conv:BoolActifLabelConverter x:Key="BoolActifLabelConverter"/>
+        <conv:StockMovementTypeConverter x:Key="StockMovementTypeConverter"/>
+        <conv:ModePaiementLabelConverter x:Key="ModePaiementLabelConverter"/>
+    </Application.Resources>
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="/Styles/AppTheme.axaml"/>
+
+        <Style Selector="TextBox">
+            <Setter Property="beh:KeyboardHelper.EnableKeyboard" Value="True"/>
+        </Style>
+        <Style Selector="NumericUpDown">
+            <Setter Property="beh:KeyboardHelper.EnableKeyboard" Value="True"/>
+        </Style>
+        <Style Selector="AutoCompleteBox">
+            <Setter Property="beh:KeyboardHelper.EnableKeyboard" Value="True"/>
+        </Style>
+    </Application.Styles>
+</Application>
