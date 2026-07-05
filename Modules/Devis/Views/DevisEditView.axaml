@@ -223,7 +223,7 @@
           </ListBox>
         </Grid>
       </ScrollViewer>
-      <Border Background="#E8F4FC" BorderBrush="#B8D4E8" BorderThickness="1" CornerRadius="8" Padding="12">
+      <Border Background="#E8F4FC" BorderBrush="#B8D4E8" BorderThickness="1" CornerRadius="8" Padding="12" IsVisible="False">
         <StackPanel Spacing="10">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Grid.Column="0" Text="{Binding LblConditions}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
