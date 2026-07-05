@@ -84,6 +84,10 @@
                     Background="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
                     Foreground="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
                     BorderBrush="{Binding IsNavAvoirFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
+            <Button Content="{Binding NavCharges}" Command="{Binding GoChargesCommand}" HorizontalAlignment="Stretch" IsVisible="{Binding ShowNavCharges}"
+                    Background="{Binding IsNavChargesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                    Foreground="{Binding IsNavChargesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                    BorderBrush="{Binding IsNavChargesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"/>
           </StackPanel>
 
           <Border Height="14"/>

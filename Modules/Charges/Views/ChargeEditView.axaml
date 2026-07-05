@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Charges.ViewModels"
+             xmlns:m="using:GestionCommerciale.Modules.Tiers.Models"
+             xmlns:charges="using:GestionCommerciale.Modules.Charges.Models"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             xmlns:beh="using:GestionCommerciale.Shared.Behaviors"
+             x:Class="GestionCommerciale.Modules.Charges.Views.ChargeEditView"
+             x:DataType="vm:ChargeEditViewModel">
+  <Grid ColumnDefinitions="*,280">
+    <ScrollViewer Grid.Column="0" Margin="0,0,12,0">
+      <StackPanel Spacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="{Binding BtnBack}" Command="{Binding BackCommand}"/>
+          <Button Content="{Binding BtnSave}" Command="{Binding SaveCommand}" Classes="primary"/>
+        </StackPanel>
+
+        <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="16"/>
+
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding LblType}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+          <ComboBox Grid.Row="0" Grid.Column="1"
+                    ItemsSource="{Binding TypesChargeActive}"
+                    SelectedItem="{Binding SelectedTypeCharge, Mode=TwoWay}"
+                    MinWidth="220" HorizontalAlignment="Left" Margin="0,0,0,10">
+            <ComboBox.ItemTemplate>
+              <DataTemplate DataType="charges:TypeCharge">
+                <TextBlock Text="{Binding Nom}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LblDate}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+          <DatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Date}" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding LblLibelle}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Libelle}" Watermark="{Binding LblLibelle}" Margin="0,0,0,10"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding LblSupplier}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+          <AutoCompleteBox Grid.Row="3" Grid.Column="1"
+                           MinimumPrefixLength="1" MaxDropDownHeight="320"
+                           Watermark="{Binding WmSupplierSearch}"
+                           ItemsSource="{Binding Fournisseurs}"
+                           ItemFilter="{Binding PartyAutocompleteFilter}"
+                           SelectedItem="{Binding SelectedFournisseur, Mode=TwoWay}"
+                           Margin="0,0,0,10">
+            <AutoCompleteBox.ValueMemberBinding>
+              <Binding Path="Nom"/>
+            </AutoCompleteBox.ValueMemberBinding>
+            <AutoCompleteBox.ItemTemplate>
+              <DataTemplate DataType="m:Tiers">
+                <TextBlock Text="{Binding Nom}"/>
+              </DataTemplate>
+            </AutoCompleteBox.ItemTemplate>
+          </AutoCompleteBox>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="{Binding LblBeneficiaireLibre}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+          <TextBox Grid.Row="4" Grid.Column="1"
+                   Text="{Binding BeneficiaireLibre}"
+                   Watermark="{Binding WmBeneficiaireLibre}"
+                   IsEnabled="{Binding !SelectedFournisseur}"
+                   Margin="0,0,0,10"/>
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Text="{Binding LblTtc}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,0"/>
+          <NumericUpDown Grid.Row="5" Grid.Column="1"
+                         Value="{Binding MontantTtc}"
+                         FormatString="N2"
+                         Minimum="0"
+                         Increment="1"
+                         ShowButtonSpinner="False"
+                         HorizontalAlignment="Left"
+                         MinWidth="160"/>
+        </Grid>
+
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding LblNote}" Opacity="0.7"/>
+          <TextBox Text="{Binding Note}"
+                   AcceptsReturn="True"
+                   MinHeight="100"
+                   TextWrapping="Wrap"
+                   VerticalContentAlignment="Top"/>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Column="1" Padding="12" CornerRadius="8"
+            Background="{DynamicResource CourseraSurfaceMutedBrush}"
+            BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <TextBlock Grid.Row="0" Text="{Binding LblTypesPanel}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+          <TextBox Grid.Column="0" Margin="0,0,8,0"
+                   Text="{Binding NewTypeNom, Mode=TwoWay}"
+                   Watermark="{Binding WmNewType}"/>
+          <Button Grid.Column="1" Content="{Binding BtnAddType}" Command="{Binding AddTypeCommand}"/>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,6" Opacity="0.85">
+          <TextBlock Text="{Binding ColTypeNom}" FontWeight="SemiBold" FontSize="12"/>
+          <TextBlock Grid.Column="1" Text="{Binding ColTypeActif}" FontWeight="SemiBold" FontSize="12"/>
+        </Grid>
+
+        <ListBox Grid.Row="3"
+                 ItemsSource="{Binding TypesCharge}"
+                 SelectedItem="{Binding SelectedTypeInPanel, Mode=TwoWay}"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 beh:ListBoxOpenOnDoubleClick.OpenCommand="{Binding EditTypeCommand}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="charges:TypeCharge">
+              <Border Padding="4,2" Background="Transparent">
+                <Border.ContextMenu>
+                  <ContextMenu Opening="OnTypeContextMenuOpening">
+                    <MenuItem Header="{Binding $parent[UserControl].((vm:ChargeEditViewModel)DataContext).MenuDeleteType}"
+                              Command="{Binding $parent[UserControl].((vm:ChargeEditViewModel)DataContext).DeleteTypeCommand}"
+                              CommandParameter="{Binding}"/>
+                  </ContextMenu>
+                </Border.ContextMenu>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Nom}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Actif, Converter={x:Static conv:BoolActifLabelConverter.Instance}}"
+                             VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Grid.Row="4"
+                Margin="0,8,0,0"
+                Content="{Binding BtnToggleTypeActif}"
+                Command="{Binding ToggleTypeActifCommand}"
+                CommandParameter="{Binding SelectedTypeInPanel}"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

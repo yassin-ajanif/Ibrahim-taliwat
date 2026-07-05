@@ -11,7 +11,7 @@ public interface IDialogService
     Task<string?> PickSaveFileAsync(string title, string suggestedFileName, IReadOnlyList<string> patterns, CancellationToken cancellationToken = default);
     Task<bool> SavePickedFileBytesAsync(string title, string suggestedFileName, IReadOnlyList<string> patterns, byte[] content, CancellationToken cancellationToken = default);
     Task<string?> PromptLicenseAsync(string title, string message, CancellationToken cancellationToken = default);
-    Task<string?> ShowPromptAsync(string title, string message, CancellationToken cancellationToken = default);
+    Task<string?> ShowPromptAsync(string title, string message, string? defaultValue = null, CancellationToken cancellationToken = default);
     Task<(DateTime from, DateTime to)?> PickDateRangeAsync(string title, CancellationToken cancellationToken = default);
     Task<List<int>?> ShowBlPickerAsync(string title, IReadOnlyList<(int Id, string Numero, DateTime Date, string MontantLabel)> availableBls, CancellationToken cancellationToken = default);
     Task<List<int>?> ShowBrPickerAsync(string title, IReadOnlyList<(int Id, string Numero, DateTime Date, string MontantLabel)> availableBrs, CancellationToken cancellationToken = default);

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GestionCommerciale.Modules.Charges.ViewModels;
 using GestionCommerciale.Modules.AvoirFournisseur.ViewModels;
 using GestionCommerciale.Modules.Auth.Services;
 using GestionCommerciale.Modules.Devis.ViewModels;
@@ -71,6 +72,7 @@ public partial class AppShellViewModel : BaseViewModel
     [ObservableProperty] private string _navBc = string.Empty;
     [ObservableProperty] private string _navBr = string.Empty;
     [ObservableProperty] private string _navFacturesFournisseur = string.Empty;
+    [ObservableProperty] private string _navCharges = string.Empty;
     [ObservableProperty] private string _navStockAdmin = string.Empty;
     [ObservableProperty] private string _navStock = string.Empty;
     [ObservableProperty] private string _navProduits = string.Empty;
@@ -93,6 +95,7 @@ public partial class AppShellViewModel : BaseViewModel
     [ObservableProperty] private bool _isNavBcActive;
     [ObservableProperty] private bool _isNavBrActive;
     [ObservableProperty] private bool _isNavFacturesFournisseurActive;
+    [ObservableProperty] private bool _isNavChargesActive;
     [ObservableProperty] private bool _isNavStockActive;
     [ObservableProperty] private bool _isNavProduitsActive;
     [ObservableProperty] private bool _isNavReportsActive;
@@ -115,6 +118,7 @@ public partial class AppShellViewModel : BaseViewModel
         NavBc = _locale.T("Nav_BC");
         NavBr = _locale.T("Nav_BR");
         NavFacturesFournisseur = _locale.T("Nav_FacturesFournisseur");
+        NavCharges = _locale.T("Nav_Charges");
         NavStockAdmin = _locale.T("Nav_StockAdmin");
         NavStock = _locale.T("Nav_Stock");
         NavProduits = _locale.T("Nav_Produits");
@@ -156,6 +160,7 @@ public partial class AppShellViewModel : BaseViewModel
     public bool ShowNavFactures => _session.CanAccessFacturation;
     public bool ShowNavAvoirs => _session.CanAccessAvoir;
     public bool ShowNavFacturesFournisseur => _session.CanAccessFacturation;
+    public bool ShowNavCharges => _session.CanAccessBC;
     public bool ShowNavAvoirFournisseur => _session.CanAccessAvoir;
     public bool ShowNavReports => _session.CanAccessReporting;
     public bool ShowNavSettings => _session.CanAccessSettings;
@@ -234,6 +239,14 @@ public partial class AppShellViewModel : BaseViewModel
     private void GoAvoirFournisseur() => _workspace.Open(_sp.GetRequiredService<AvoirFournisseurListViewModel>());
 
     [RelayCommand]
+    private void GoCharges()
+    {
+        var vm = _sp.GetRequiredService<ChargesListViewModel>();
+        _workspace.Open(vm);
+        vm.LoadCommand.Execute(null);
+    }
+
+    [RelayCommand]
     private void GoSettings() => _workspace.Open(_sp.GetRequiredService<SettingsViewModel>());
 
     [RelayCommand]
@@ -272,6 +285,7 @@ public partial class AppShellViewModel : BaseViewModel
         IsNavBcActive = p is BCListViewModel or BCEditViewModel;
         IsNavBrActive = p is BRListViewModel or BREditViewModel;
         IsNavFacturesFournisseurActive = p is FactureFournisseurListViewModel or FactureFournisseurEditViewModel;
+        IsNavChargesActive = p is ChargesListViewModel or ChargeEditViewModel;
         IsNavStockActive = p is StockMainViewModel;
         IsNavProduitsActive = p is ProduitsViewModel;
         IsNavReportsActive = p is ReportsListViewModel;
