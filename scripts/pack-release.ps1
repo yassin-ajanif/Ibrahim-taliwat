@@ -9,6 +9,9 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PublishDir = Join-Path $ProjectRoot "publish"
 $ReleaseDir = Join-Path $ProjectRoot "releases"
 
+$PackId = "Droguerie.IbrahimTelouet"
+$PackTitle = "Droguerie IBRAHIM TELOUET"
+
 Push-Location $ProjectRoot
 try {
     dotnet publish GestionCommerciale.csproj `
@@ -21,8 +24,8 @@ try {
     $IconPath = Join-Path $ProjectRoot "Assets\IBRAHIM APP ICON.ico"
 
     vpk pack `
-        --packId Cryonex.GestionCommerciale `
-        --packTitle "Droguerie IBRAHIM TELOUET" `
+        --packId $PackId `
+        --packTitle $PackTitle `
         --packVersion $Version `
         --packDir $PublishDir `
         --mainExe GestionCommerciale.exe `
