@@ -21,15 +21,14 @@ public static class CommercialDocumentPdfRenderer
     private const string TableRowEven = "#FFFFFF";
     /// <summary>Rounded corners for panels, table frame, and bottom boxes (QuestPDF points).</summary>
     private const float ComponentCornerRadius = 8f;
-    private const float HeaderLogoHeight = 75f;
-    private const float HeaderLogoPaddingHorizontal = 24f;
+    private const float HeaderLogoHeight = 100f;
+    private const float HeaderLogoPaddingHorizontal = 40f;
     private const float HeaderRowSpacing = 14f;
     private const float HeaderSectionSpacing = 10f;
     private const float HeaderCompanyFontSize = 16f;
     private const float HeaderDocumentKindFontSize = 17f;
-    private const float PartyNameFontSize = 12f;
     private const float TableFontSize = 9f;
-    private const float TableCellPaddingHorizontal = 2f;
+    private const float TableCellPaddingHorizontal = 5f;
 
     public static byte[] Render(CommercialDocumentPdfModel model, byte[]? logoBytes, PdfLogoLayoutOptions? logoLayout = null)
     {
@@ -88,12 +87,6 @@ public static class CommercialDocumentPdfRenderer
                     });
 
                     main.Item().ExtendVertical().Element(c => DrawTable(c, model));
-
-                    if (!string.IsNullOrWhiteSpace(model.Note))
-                        main.Item().Element(c => DrawNoteSection(c, model.Note!));
-
-                    if (model.ConditionLines.Count > 0)
-                        main.Item().Element(c => DrawConditionsSection(c, model.ConditionLines));
                 });
 
                 page.Footer().AlignCenter().Column(fc =>
@@ -119,34 +112,6 @@ public static class CommercialDocumentPdfRenderer
         });
 
         return doc.GeneratePdf();
-    }
-
-    private static void DrawNoteSection(IContainer container, string note)
-    {
-        container.Element(InfoPanel).Padding(12).Column(col =>
-        {
-            col.Item().Text("Note").SemiBold().FontSize(9).FontColor(TextMuted);
-            col.Item().PaddingTop(4).Text(note).FontSize(9).FontColor(TextPrimary).LineHeight(1.35f);
-        });
-    }
-
-    private static void DrawConditionsSection(IContainer container, IReadOnlyList<PdfKeyValueLine> lines)
-    {
-        container.Element(InfoPanel).Padding(12).Column(col =>
-        {
-            col.Spacing(8);
-            col.Item().Text("CONDITIONS").Bold().FontSize(10).FontColor(TextPrimary);
-            foreach (var line in lines)
-            {
-                col.Item().PaddingTop(4).Column(block =>
-                {
-                    if (!string.IsNullOrWhiteSpace(line.Key))
-                        block.Item().Text(line.Key.ToUpperInvariant()).SemiBold().FontSize(9).FontColor(TextSecondary);
-                    if (!string.IsNullOrWhiteSpace(line.Value))
-                        block.Item().PaddingTop(2).Text(line.Value).FontSize(9).FontColor(TextPrimary).LineHeight(1.35f);
-                });
-            }
-        });
     }
 
     private static void DrawLogoOrCompanyName(
@@ -203,7 +168,7 @@ public static class CommercialDocumentPdfRenderer
                     var valueCell = r.RelativeItem().AlignBottom();
                     var value = valueCell.Text(line.Value).FontColor(TextPrimary);
                     if (line.EmphasizeValue)
-                        value.Bold().FontSize(PartyNameFontSize);
+                        value.Bold().FontSize(11);
                     else
                         value.FontSize(9);
                 });
@@ -295,8 +260,7 @@ public static class CommercialDocumentPdfRenderer
                         {
                             var col = model.Columns[i];
                             var cell = h.Cell().Element(TableHeaderCell);
-                            ApplyHeaderAlign(cell, col)
-                                .Text(col.Header).SemiBold().FontSize(TableFontSize).FontColor(TextPrimary);
+                            DrawTableHeaderText(ApplyHeaderAlign(cell, col), col.Header);
                         }
                     });
 
@@ -308,8 +272,7 @@ public static class CommercialDocumentPdfRenderer
                         {
                             var col = model.Columns[i];
                             var cell = t.Cell().Element(c => TableBodyCell(c, bg).ShowEntire());
-                            ApplyAlign(cell, col.Align)
-                                .Text(row[i]).FontSize(TableFontSize).FontColor(TextPrimary);
+                            DrawTableBodyText(ApplyAlign(cell, col.Align), col, row[i]);
                         }
 
                         rowIndex++;
@@ -353,14 +316,37 @@ public static class CommercialDocumentPdfRenderer
         });
     }
 
+    private static bool AllowsMultiLineBody(PdfTableColumn col) =>
+        col.Header.StartsWith("Réf", StringComparison.OrdinalIgnoreCase)
+        || col.Header.Equals("Désignation", StringComparison.OrdinalIgnoreCase);
+
+    private static void DrawTableHeaderText(IContainer cell, string header) =>
+        cell.Text(header).SemiBold().FontSize(TableFontSize).FontColor(TextPrimary);
+
+    private static void DrawTableBodyText(IContainer cell, PdfTableColumn col, string value)
+    {
+        var text = cell.Text(value).FontSize(TableFontSize).FontColor(TextPrimary);
+        if (!AllowsMultiLineBody(col))
+            text.ClampLines(1);
+    }
+
     private static bool UsesCenteredHeader(string header) =>
         header.StartsWith("Réf", StringComparison.OrdinalIgnoreCase)
         || header.Equals("Désignation", StringComparison.OrdinalIgnoreCase);
 
-    private static IContainer ApplyHeaderAlign(IContainer cell, PdfTableColumn col) =>
-        UsesCenteredHeader(col.Header)
-            ? cell.AlignMiddle().AlignCenter()
-            : ApplyAlign(cell, col.Align);
+    private static IContainer ApplyHeaderAlign(IContainer cell, PdfTableColumn col)
+    {
+        cell = cell.AlignMiddle();
+        if (UsesCenteredHeader(col.Header))
+            return cell.AlignCenter();
+
+        return col.Align switch
+        {
+            PdfTextAlignment.Center => cell.AlignCenter(),
+            PdfTextAlignment.End => cell.AlignRight(),
+            _ => cell.AlignLeft()
+        };
+    }
 
     private static IContainer ApplyAlign(IContainer cell, PdfTextAlignment align) =>
         align switch
