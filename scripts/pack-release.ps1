@@ -18,11 +18,11 @@ try {
         -o $PublishDir `
         /p:Version=$Version
 
-    $IconPath = Join-Path $ProjectRoot "Assets\faturati.ico"
+    $IconPath = Join-Path $ProjectRoot "Assets\IBRAHIM APP ICON.ico"
 
     vpk pack `
         --packId Cryonex.GestionCommerciale `
-        --packTitle "CRYONEX" `
+        --packTitle "Droguerie IBRAHIM TELOUET" `
         --packVersion $Version `
         --packDir $PublishDir `
         --mainExe GestionCommerciale.exe `

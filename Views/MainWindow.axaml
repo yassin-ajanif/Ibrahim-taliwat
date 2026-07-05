@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="GestionCommerciale.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/faturati.ico"
+        Icon="/Assets/IBRAHIM APP ICON.ico"
         Title="{Binding Title}"
         Width="1100" Height="720"
         MinWidth="1100">

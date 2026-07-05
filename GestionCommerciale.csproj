@@ -8,10 +8,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>GestionCommerciale</RootNamespace>
-    <ApplicationIcon>Assets\faturati.ico</ApplicationIcon>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <ApplicationIcon>Assets\IBRAHIM APP ICON.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>DROGUERIE IBRAHIM TELOUET</Product>
+    <AssemblyTitle>DROGUERIE IBRAHIM TELOUET</AssemblyTitle>
   </PropertyGroup>
 
   <!-- IDE / dotnet-watch C# hot reload (XAML uses HotAvalonia in Debug). -->
