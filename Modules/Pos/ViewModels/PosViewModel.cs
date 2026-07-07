@@ -4,9 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Pos.Models;
-using GestionCommerciale.Modules.Stock.Services;
 using GestionCommerciale.Modules.Pos.Services;
-using GestionCommerciale.Modules.Stock.Models;
+using GestionCommerciale.Modules.Stock.Services;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Helpers;
 using GestionCommerciale.Shared.Services;
@@ -72,12 +71,12 @@ public partial class PosViewModel : BaseViewModel
         ShowKeyboard = cfg.EnableVirtualKeyboard;
     }
 
-    public ObservableCollection<ProductSearchRow> SearchResults { get; } = [];
+    public ObservableCollection<CatalogSearchRow> SearchResults { get; } = [];
     public ObservableCollection<CartLineRow> Cart { get; } = [];
     public ObservableCollection<TiersEntity> Clients { get; } = [];
 
     [ObservableProperty] private string _searchText = string.Empty;
-    [ObservableProperty] private ProductSearchRow? _selectedProduct;
+    [ObservableProperty] private CatalogSearchRow? _selectedProduct;
     [ObservableProperty] private TiersEntity? _selectedClient;
 
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
@@ -96,7 +95,7 @@ public partial class PosViewModel : BaseViewModel
 
     public bool HasItems => Cart.Count > 0;
 
-    public string SearchWatermark => _locale.T("Wm_SearchProducts");
+    public string SearchWatermark => _locale.T("Wm_SearchCatalog");
     public string CartTitle => _locale.T("Nav_Pos");
     public string TotalLabel => "Total TTC";
     public string BtnClearCart => "Vider";
@@ -194,18 +193,21 @@ public partial class PosViewModel : BaseViewModel
     [RelayCommand]
     private async Task SearchProducts()
     {
-        var list = await _posService.SearchProductsAsync(SearchText);
+        var list = await _posService.SearchCatalogAsync(SearchText);
         SearchResults.Clear();
-        foreach (var p in list)
-            SearchResults.Add(new ProductSearchRow(p));
+        foreach (var item in list)
+            SearchResults.Add(new CatalogSearchRow(item));
     }
 
     [RelayCommand]
-    private void AddProduct(ProductSearchRow? row)
+    private void AddProduct(CatalogSearchRow? row)
     {
-        if (row?.Product is not { } produit) return;
+        if (row?.Item is not { } item) return;
 
-        var existing = Cart.FirstOrDefault(l => l.ProduitId == produit.Id);
+        CartLineRow? existing = item.Kind == DocumentCatalogKind.Service
+            ? Cart.FirstOrDefault(l => l.ServiceId == item.Id)
+            : Cart.FirstOrDefault(l => l.ProduitId == item.Id);
+
         if (existing is not null)
         {
             existing.Quantite++;
@@ -215,11 +217,13 @@ public partial class PosViewModel : BaseViewModel
 
         var line = new CartLineRow
         {
-            ProduitId = produit.Id,
-            Reference = produit.Reference,
-            Designation = produit.Designation,
-            PrixUnitaireHt = produit.PrixVenteHT,
-            TauxTva = produit.TauxTVA,
+            ProduitId = item.Kind == DocumentCatalogKind.Product ? item.Id : null,
+            ServiceId = item.Kind == DocumentCatalogKind.Service ? item.Id : null,
+            Reference = item.Reference,
+            Designation = item.Designation,
+            Conditionnement = item.Unite,
+            PrixUnitaireHt = item.PrixVenteHT,
+            TauxTva = item.TauxTVA,
             Quantite = 1
         };
         line.PropertyChanged += OnCartLinePropertyChanged;
@@ -292,8 +296,10 @@ public partial class PosViewModel : BaseViewModel
 
         var cartData = Cart.Select(l => new CartLineData
         {
-            ProduitId = l.ProduitId,
+            ProduitId = l.IsService ? null : l.ProduitId,
+            ServiceId = l.IsService ? l.ServiceId : null,
             Designation = l.Designation,
+            Conditionnement = l.Conditionnement,
             Quantite = l.Quantite,
             PrixUnitaireHt = l.PrixUnitaireHt,
             TauxTva = l.TauxTva,
@@ -348,16 +354,25 @@ public partial class PosViewModel : BaseViewModel
                 Motif = "Remboursement POS",
                 RetourMarchandise = true
             };
-            foreach (var l in Cart)
+            foreach (var l in Cart.Where(x => x.ProduitId is > 0))
             {
                 avoir.Lignes.Add(new AvoirLigne
                 {
-                    ProduitId = l.ProduitId,
+                    ProduitId = l.ProduitId!.Value,
                     Designation = l.Designation,
                     Quantite = l.Quantite,
                     PrixUnitaireHT = l.PrixUnitaireHt,
                     TauxTVA = l.TauxTva
                 });
+            }
+
+            if (avoir.Lignes.Count == 0)
+            {
+                await _dialog.ShowInfoAsync(
+                    _locale.T("Avoir_Title"),
+                    "Aucun produit à rembourser (les services ne sont pas retournés au stock).",
+                    cancellationToken);
+                return;
             }
 
             db.Avoirs.Add(avoir);

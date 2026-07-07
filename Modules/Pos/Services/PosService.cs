@@ -1,6 +1,8 @@
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Modules.Pos.Models;
+using GestionCommerciale.Modules.Services;
+using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.Stock.Models;
 using GestionCommerciale.Modules.Stock.Services;
 using TiersEntity = GestionCommerciale.Modules.Tiers.Models.Tiers;
@@ -13,6 +15,8 @@ namespace GestionCommerciale.Modules.Pos.Services;
 
 public sealed class PosService : IPosService
 {
+    private const int SearchLimit = 20;
+
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IStockMovementService _stock;
 
@@ -22,17 +26,30 @@ public sealed class PosService : IPosService
         _stock = stock;
     }
 
-    public async Task<List<Produit>> SearchProductsAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<DocumentCatalogItem>> SearchCatalogAsync(string query, CancellationToken cancellationToken = default)
     {
-        var q = query?.Trim().ToLowerInvariant() ?? string.Empty;
-        if (q.Length < 1)
+        if (string.IsNullOrWhiteSpace(query))
             return [];
 
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-        return await db.Produits
-            .Where(p => p.Actif && (p.Reference.ToLower().Contains(q) || p.Designation.ToLower().Contains(q) || p.CodeBarre!.ToLower().Contains(q)))
-            .Take(20)
+        var products = await db.Produits.AsNoTracking()
+            .Where(p => p.Actif)
+            .WhereSearchMatches(query)
+            .SelectForListWithoutImageData()
+            .Take(SearchLimit)
             .ToListAsync(cancellationToken);
+
+        var services = await db.Services.AsNoTracking()
+            .Where(s => s.Actif)
+            .WhereSearchMatches(query)
+            .OrderBy(s => s.Reference)
+            .Take(SearchLimit)
+            .ToListAsync(cancellationToken);
+
+        return products.Select(DocumentCatalogItem.FromProduct)
+            .Concat(services.Select(DocumentCatalogItem.FromService))
+            .Take(SearchLimit)
+            .ToList();
     }
 
     public async Task<List<Facture>> SearchFacturesAsync(string query, CancellationToken cancellationToken = default)
@@ -99,7 +116,8 @@ public sealed class PosService : IPosService
             db.BonLivraisonLignes.Add(new BonLivraisonLigne
             {
                 BLId = bl.Id,
-                ProduitId = line.ProduitId,
+                ProduitId = line.IsService ? null : line.ProduitId,
+                ServiceId = line.IsService ? line.ServiceId : null,
                 Designation = line.Designation,
                 QuantiteCommandee = line.Quantite,
                 QuantiteLivree = line.Quantite,
@@ -111,7 +129,7 @@ public sealed class PosService : IPosService
 
         await _stock.ResyncBonLivraisonStockAsync(
             db, bl.Id, bl.Numero,
-            cart.Select(l => (l.ProduitId, l.Quantite)),
+            cart.Where(l => l.ProduitId is > 0).Select(l => (l.ProduitId!.Value, l.Quantite)),
             null, cancellationToken);
 
         var facture = new Facture
@@ -135,13 +153,14 @@ public sealed class PosService : IPosService
             db.FactureLignes.Add(new FactureLigne
             {
                 FactureId = facture.Id,
-                ProduitId = line.ProduitId,
+                ProduitId = line.IsService ? null : line.ProduitId,
+                ServiceId = line.IsService ? line.ServiceId : null,
                 Designation = line.Designation,
                 Quantite = line.Quantite,
                 PrixUnitaireHT = line.PrixUnitaireHt,
                 Remise = line.Remise,
                 TauxTVA = line.TauxTva,
-                Conditionnement = string.Empty
+                Conditionnement = line.Conditionnement
             });
         }
         facture.TotalTtc = DocumentTotalsHelper.FactureTtc(

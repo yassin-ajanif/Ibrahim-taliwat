@@ -4,11 +4,15 @@ namespace GestionCommerciale.Modules.Pos.ViewModels;
 
 public partial class CartLineRow : ObservableObject
 {
-    public int ProduitId { get; set; }
+    public int? ProduitId { get; set; }
+    public int? ServiceId { get; set; }
     public string Reference { get; set; } = string.Empty;
     public string Designation { get; set; } = string.Empty;
+    public string Conditionnement { get; set; } = string.Empty;
     public decimal PrixUnitaireHt { get; set; }
     public decimal TauxTva { get; set; }
+
+    public bool IsService => ServiceId is > 0;
 
     [ObservableProperty] private decimal _quantite = 1;
     [ObservableProperty] private decimal _remisePct;

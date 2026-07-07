@@ -33,6 +33,7 @@ public partial class PosView : UserControl
         }
 
         var match = vm.SearchResults.FirstOrDefault(r =>
+            !r.IsService &&
             !string.IsNullOrEmpty(r.CodeBarre) &&
             r.CodeBarre.Equals(text, StringComparison.OrdinalIgnoreCase));
 
