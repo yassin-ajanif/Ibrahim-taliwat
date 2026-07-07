@@ -1,4 +1,6 @@
+using GestionCommerciale.Modules.Charges.Models;
 using GestionCommerciale.Modules.Facturation.Models;
+using GestionCommerciale.Modules.FactureFournisseur.Models;
 using GestionCommerciale.Modules.Reporting.ViewModels;
 using GestionCommerciale.Modules.Stock.Models;
 using GestionCommerciale.Modules.Tiers.Models;
@@ -453,6 +455,149 @@ public sealed class ReportService : IReportService
             totalTtc += p.StockActuel * p.PrixVenteHT * (1 + p.TauxTVA / 100m);
         }
         return (totalHt, totalTtc, dev);
+    }
+
+    public async Task<ReportProfitChargesResult> GetProfitChargesAsync(
+        DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var dev = await GetDeviseAsync(ct);
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        var toEnd = to.Date.AddDays(1);
+        var rows = new List<ReportProfitChargeRow>();
+
+        var typeMarge = _locale.T("Reports_TypeSaleMargin");
+        var typeAchat = _locale.T("Reports_TypePurchase");
+        var typeCharge = _locale.T("Reports_TypeCharge");
+
+        var factures = await db.Factures.AsNoTracking()
+            .Where(f => f.Date >= from && f.Date < toEnd)
+            .Select(f => new
+            {
+                f.Numero,
+                f.Date,
+                f.RemiseGlobale,
+                Lignes = f.Lignes!.Select(l => new
+                {
+                    l.ProduitId,
+                    l.Quantite,
+                    l.PrixUnitaireHT,
+                    l.Remise,
+                    l.TauxTVA
+                }).ToList()
+            })
+            .ToListAsync(ct);
+
+        var allProdIds = factures.SelectMany(f => f.Lignes).Select(l => l.ProduitId).Distinct().ToList();
+        var prodMap = allProdIds.Count == 0
+            ? new Dictionary<int, decimal>()
+            : await db.Produits.AsNoTracking()
+                .Where(p => allProdIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.PrixAchatHT, ct);
+
+        decimal totalMargin = 0;
+        foreach (var f in factures)
+        {
+            var factor = 1 - f.RemiseGlobale / 100m;
+            decimal ht = 0, cost = 0;
+            foreach (var l in f.Lignes)
+            {
+                var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
+                ht += lht;
+                cost += l.Quantite * prodMap.GetValueOrDefault(l.ProduitId);
+            }
+            ht *= factor;
+            var profit = ht - cost;
+            totalMargin += profit;
+            rows.Add(new ReportProfitChargeRow(
+                typeMarge,
+                f.Numero ?? string.Empty,
+                f.Date,
+                ht,
+                profit,
+                dev,
+                profit >= 0));
+        }
+
+        var facturesFournisseur = await db.FacturesFournisseurs.AsNoTracking()
+            .Where(f => f.Date >= from && f.Date < toEnd)
+            .Select(f => new
+            {
+                f.Numero,
+                f.Date,
+                f.RemiseGlobale,
+                Lignes = f.Lignes!.Select(l => new
+                {
+                    l.Quantite,
+                    l.PrixUnitaireHT,
+                    l.Remise,
+                    l.TauxTVA
+                }).ToList()
+            })
+            .ToListAsync(ct);
+
+        decimal totalPurchases = 0;
+        foreach (var f in facturesFournisseur)
+        {
+            var lignes = f.Lignes.Select(l => new FactureFournisseurLigne
+            {
+                Quantite = l.Quantite,
+                PrixUnitaireHT = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTVA = l.TauxTVA
+            }).ToList();
+            var (ht, _, _) = DocumentTotalsHelper.FactureFournisseurTotals(lignes, f.RemiseGlobale);
+            totalPurchases += ht;
+            rows.Add(new ReportProfitChargeRow(
+                typeAchat,
+                f.Numero ?? string.Empty,
+                f.Date,
+                ht,
+                -ht,
+                dev,
+                false));
+        }
+
+        var charges = await db.Charges.AsNoTracking()
+            .Include(c => c.TypeCharge)
+            .Include(c => c.Fournisseur)
+            .Where(c => c.Date >= from && c.Date < toEnd)
+            .ToListAsync(ct);
+
+        decimal totalCharges = 0;
+        foreach (var c in charges)
+        {
+            totalCharges += c.MontantTtc;
+            var beneficiary = c.Fournisseur?.Nom;
+            if (string.IsNullOrWhiteSpace(beneficiary))
+                beneficiary = c.BeneficiaireLibre;
+            var label = string.IsNullOrWhiteSpace(c.Libelle)
+                ? beneficiary ?? string.Empty
+                : string.IsNullOrWhiteSpace(beneficiary)
+                    ? c.Libelle
+                    : $"{c.Libelle} — {beneficiary}";
+
+            rows.Add(new ReportProfitChargeRow(
+                c.TypeCharge?.Nom ?? typeCharge,
+                label,
+                c.Date,
+                0,
+                -c.MontantTtc,
+                dev,
+                false));
+        }
+
+        var sorted = rows.OrderByDescending(r => r.Date).ThenBy(r => r.TypeLabel).ToList();
+        var net = totalMargin - totalPurchases - totalCharges;
+
+        return new ReportProfitChargesResult
+        {
+            TotalSalesMargin = totalMargin,
+            TotalPurchases = totalPurchases,
+            TotalCharges = totalCharges,
+            NetResult = net,
+            Devise = dev,
+            Rows = sorted
+        };
     }
 
     private async Task<string> GetDeviseAsync(CancellationToken ct = default)

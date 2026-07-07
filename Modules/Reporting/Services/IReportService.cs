@@ -22,4 +22,7 @@ public interface IReportService
         DateTime from, DateTime to, CancellationToken ct = default);
 
     Task<(decimal ht, decimal ttc, string devise)> GetStockValuationAsync(CancellationToken ct = default);
+
+    Task<ReportProfitChargesResult> GetProfitChargesAsync(
+        DateTime from, DateTime to, CancellationToken ct = default);
 }

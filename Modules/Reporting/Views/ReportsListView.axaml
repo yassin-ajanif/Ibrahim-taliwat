@@ -46,6 +46,20 @@
                   Foreground="{Binding ShowStockMovements, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
                   BorderBrush="{Binding ShowStockMovements, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
                   Command="{Binding GoStockMovementsCommand}"/>
+          <Button Content="{Binding BtnProfitCharges}" Margin="0,0,6,0"
+                  Background="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                  Foreground="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                  BorderBrush="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                  Command="{Binding GoProfitChargesCommand}"/>
+        </StackPanel>
+
+        <!-- Quick date presets (profit & charges) -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="6"
+                    IsVisible="{Binding ShowProfitChargesPresets}">
+          <Button Content="{Binding BtnPresetToday}" Command="{Binding SetPresetTodayCommand}"/>
+          <Button Content="{Binding BtnPresetWeek}" Command="{Binding SetPresetWeekCommand}"/>
+          <Button Content="{Binding BtnPresetMonth}" Command="{Binding SetPresetMonthCommand}"/>
+          <Button Content="{Binding BtnPresetYear}" Command="{Binding SetPresetYearCommand}"/>
         </StackPanel>
 
         <!-- Date range (hidden for unpaid) -->
@@ -463,6 +477,99 @@
                   </StackPanel>
                 </StackPanel>
               </Border>
+
+              <Border Padding="20,18" CornerRadius="10"
+                      Background="{DynamicResource CourseraSurfaceMutedBrush}"
+                      IsVisible="{Binding ShowEmpty}">
+                <TextBlock Text="{Binding EmptyMessage}" Classes="subtle" TextWrapping="Wrap"
+                           TextAlignment="Center" FontSize="13.5" LineHeight="22"/>
+              </Border>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Profit & charges report -->
+        <StackPanel Spacing="8" IsVisible="{Binding ShowProfitCharges}">
+          <!-- Summary cards -->
+          <Grid ColumnDefinitions="*,*,*,*">
+            <Border Grid.Column="0" Padding="14,12" CornerRadius="10" Margin="0,0,5,0"
+                    Background="{DynamicResource CourseraSurfaceBrush}"
+                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding LblProfitChargesMarginLabel}" Classes="subtle" FontSize="12"/>
+                <TextBlock Text="{Binding LblProfitChargesTotalMargin}" FontWeight="Bold" FontSize="15"
+                           Foreground="{DynamicResource CourseraSuccessBrush}"/>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="14,12" CornerRadius="10" Margin="5,0,5,0"
+                    Background="{DynamicResource CourseraSurfaceBrush}"
+                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding LblProfitChargesPurchasesLabel}" Classes="subtle" FontSize="12"/>
+                <TextBlock Text="{Binding LblProfitChargesTotalPurchases}" FontWeight="Bold" FontSize="15"
+                           Foreground="{DynamicResource CourseraDangerBrush}"/>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="14,12" CornerRadius="10" Margin="5,0,5,0"
+                    Background="{DynamicResource CourseraSurfaceBrush}"
+                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding LblProfitChargesChargesLabel}" Classes="subtle" FontSize="12"/>
+                <TextBlock Text="{Binding LblProfitChargesTotalCharges}" FontWeight="Bold" FontSize="15"
+                           Foreground="{DynamicResource CourseraDangerBrush}"/>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Padding="14,12" CornerRadius="10" Margin="5,0,0,0"
+                    Background="{DynamicResource CourseraSurfaceBrush}"
+                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding LblProfitChargesNetLabel}" Classes="subtle" FontSize="12"/>
+                <TextBlock Text="{Binding LblProfitChargesNetResult}" FontWeight="Bold" FontSize="15"
+                           Foreground="{Binding IsNetPositive, Converter={x:Static conv:PositiveNegativeForegroundConverter.Instance}}"/>
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <Border Padding="16" Background="{DynamicResource CourseraSurfaceBrush}"
+                  BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1" CornerRadius="12">
+            <StackPanel Spacing="8">
+              <!-- Table header -->
+              <Grid ColumnDefinitions="1.2*,2*,1*,1*,1.2*" Margin="10,0,10,4">
+                <TextBlock Grid.Column="0" Text="{Binding ColProfitType}" FontWeight="SemiBold" FontSize="12" Classes="subtle"/>
+                <TextBlock Grid.Column="1" Text="{Binding ColProfitRef}" FontWeight="SemiBold" FontSize="12" Classes="subtle"/>
+                <TextBlock Grid.Column="2" Text="{Binding ColProfitDate}" FontWeight="SemiBold" FontSize="12" Classes="subtle"/>
+                <TextBlock Grid.Column="3" Text="{Binding ColProfitHt}" FontWeight="SemiBold" FontSize="12" Classes="subtle"
+                           HorizontalAlignment="Right"/>
+                <TextBlock Grid.Column="4" Text="{Binding ColProfitAmount}" FontWeight="SemiBold" FontSize="12" Classes="subtle"
+                           HorizontalAlignment="Right"/>
+              </Grid>
+
+              <ItemsControl ItemsSource="{Binding ProfitCharges}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ReportProfitChargeRow">
+                    <Border Padding="10,8" Margin="0,0,0,4"
+                            Background="{DynamicResource CourseraSurfaceMutedBrush}"
+                            CornerRadius="8">
+                      <Grid ColumnDefinitions="1.2*,2*,1*,1*,1.2*">
+                        <Border Grid.Column="0" HorizontalAlignment="Left" Padding="10,4" CornerRadius="6"
+                                Background="{Binding IsPositive, Converter={x:Static conv:PositiveNegativeForegroundConverter.Instance}, ConverterParameter=bg}">
+                          <TextBlock Text="{Binding TypeLabel}" FontSize="12" FontWeight="SemiBold"
+                                     Foreground="{Binding IsPositive, Converter={x:Static conv:PositiveNegativeForegroundConverter.Instance}}"/>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding RefLibelle}" FontSize="13"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock Grid.Column="2" Text="{Binding LblDate}" FontSize="13"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="{Binding LblMontantHt}" FontSize="13"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right" Classes="subtle"/>
+                        <TextBlock Grid.Column="4" Text="{Binding LblAmount}" FontSize="13" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{Binding IsPositive, Converter={x:Static conv:PositiveNegativeForegroundConverter.Instance}}"/>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
 
               <Border Padding="20,18" CornerRadius="10"
                       Background="{DynamicResource CourseraSurfaceMutedBrush}"
