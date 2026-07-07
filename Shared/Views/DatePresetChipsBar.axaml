@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Shared.ViewModels"
+             xmlns:conv="using:GestionCommerciale.Shared.Converters"
+             x:Class="GestionCommerciale.Shared.Views.DatePresetChipsBar"
+             x:DataType="vm:DatePresetChipsModel">
+  <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="6">
+    <Button Content="{Binding BtnToday}" Margin="0,0,0,0"
+            Background="{Binding PresetTodayActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+            Foreground="{Binding PresetTodayActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+            BorderBrush="{Binding PresetTodayActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+            Command="{Binding SetTodayCommand}"/>
+    <Button Content="{Binding BtnWeek}"
+            Background="{Binding PresetWeekActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+            Foreground="{Binding PresetWeekActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+            BorderBrush="{Binding PresetWeekActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+            Command="{Binding SetWeekCommand}"/>
+    <Button Content="{Binding BtnMonth}"
+            Background="{Binding PresetMonthActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+            Foreground="{Binding PresetMonthActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+            BorderBrush="{Binding PresetMonthActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+            Command="{Binding SetMonthCommand}"/>
+    <Button Content="{Binding BtnYear}"
+            Background="{Binding PresetYearActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+            Foreground="{Binding PresetYearActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+            BorderBrush="{Binding PresetYearActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+            Command="{Binding SetYearCommand}"/>
+  </StackPanel>
+</UserControl>

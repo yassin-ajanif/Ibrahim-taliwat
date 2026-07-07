@@ -16,6 +16,11 @@
 
         <!-- Report selector buttons -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+          <Button Content="{Binding BtnProfitCharges}" Margin="0,0,6,0"
+                  Background="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
+                  Foreground="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
+                  BorderBrush="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                  Command="{Binding GoProfitChargesCommand}"/>
           <Button Content="{Binding BtnSaleByProduct}" Margin="0,0,6,0"
                   Background="{Binding ShowSaleByProduct, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
                   Foreground="{Binding ShowSaleByProduct, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
@@ -46,21 +51,11 @@
                   Foreground="{Binding ShowStockMovements, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
                   BorderBrush="{Binding ShowStockMovements, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
                   Command="{Binding GoStockMovementsCommand}"/>
-          <Button Content="{Binding BtnProfitCharges}" Margin="0,0,6,0"
-                  Background="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=bg}"
-                  Foreground="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=fg}"
-                  BorderBrush="{Binding ShowProfitCharges, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
-                  Command="{Binding GoProfitChargesCommand}"/>
         </StackPanel>
 
-        <!-- Quick date presets (profit & charges) -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="6"
-                    IsVisible="{Binding ShowProfitChargesPresets}">
-          <Button Content="{Binding BtnPresetToday}" Command="{Binding SetPresetTodayCommand}"/>
-          <Button Content="{Binding BtnPresetWeek}" Command="{Binding SetPresetWeekCommand}"/>
-          <Button Content="{Binding BtnPresetMonth}" Command="{Binding SetPresetMonthCommand}"/>
-          <Button Content="{Binding BtnPresetYear}" Command="{Binding SetPresetYearCommand}"/>
-        </StackPanel>
+        <!-- Quick date presets (all date-filtered reports) -->
+        <shared:DatePresetChipsBar DataContext="{Binding DatePresets}"
+                                   IsVisible="{Binding ShowDateFilter}"/>
 
         <!-- Date range (hidden for unpaid) -->
         <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" IsVisible="{Binding ShowDateFilter}"
