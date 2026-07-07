@@ -236,18 +236,6 @@ public partial class ChargeEditViewModel : BaseViewModel
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Libelle))
-        {
-            await _dialog.ShowErrorAsync(_locale.T("Charge_Title"), _locale.T("Charge_ErrLibelle"), cancellationToken);
-            return;
-        }
-
-        if (SelectedFournisseur == null && string.IsNullOrWhiteSpace(BeneficiaireLibre))
-        {
-            await _dialog.ShowErrorAsync(_locale.T("Charge_Title"), _locale.T("Charge_ErrBeneficiaire"), cancellationToken);
-            return;
-        }
-
         if (MontantTtc < 0)
         {
             await _dialog.ShowErrorAsync(_locale.T("Charge_Title"), _locale.T("Charge_ErrMontant"), cancellationToken);
