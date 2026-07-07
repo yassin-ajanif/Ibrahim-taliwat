@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestionCommerciale.Modules.Services.ViewModels"
+             x:Class="GestionCommerciale.Modules.Services.Views.ServiceEditView"
+             x:DataType="vm:ServiceEditViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="12" MaxWidth="640">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{Binding BtnBack}" Command="{Binding BackCommand}"/>
+        <Button Content="{Binding BtnSave}" Command="{Binding SaveCommand}" Classes="primary"/>
+      </StackPanel>
+
+      <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="16"/>
+
+      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding LblReference}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Reference}" Watermark="{Binding WmRefExample}" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LblDesignation}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Designation}" Watermark="{Binding WmLibelle}" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding LblUnite}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Unite}" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding LblPrixVente}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding PrixVenteHt}" FormatString="N2" Minimum="0"
+                       ShowButtonSpinner="False" HorizontalAlignment="Left" MinWidth="160" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="{Binding LblCout}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding CoutHt}" FormatString="N2" Minimum="0"
+                       ShowButtonSpinner="False" HorizontalAlignment="Left" MinWidth="160" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="{Binding LblTva}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding TauxTva}" FormatString="N0" Minimum="0"
+                       ShowButtonSpinner="False" HorizontalAlignment="Left" MinWidth="160" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="{Binding ChkActif}" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,12,10"/>
+        <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding Actif}" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="{Binding LblNote}" VerticalAlignment="Top" Opacity="0.7" Margin="0,4,12,0"/>
+        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Note}" AcceptsReturn="True" MinHeight="80" TextWrapping="Wrap"/>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

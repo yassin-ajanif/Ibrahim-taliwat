@@ -11,6 +11,7 @@ using GestionCommerciale.Modules.Facturation.Services;
 using GestionCommerciale.Modules.Facturation.ViewModels;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Modules.Livraison.Services;
+using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Stock.Services;
 using GestionCommerciale.Modules.Tiers.Models;
 using GestionCommerciale.Shared.Database;
@@ -138,7 +139,7 @@ public partial class BLEditViewModel : BaseViewModel
 
     public DocumentLineGridColumnState LineGridColumns { get; } = new(supportsLineRemise: true);
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
+    public AutoCompleteFilterPredicate<object?> CatalogAutocompleteFilter => DocumentCatalogAutoComplete.ItemFilter;
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
 
     public bool ShowTotalTva => LineGridColumns.ShowTva && LineGridColumns.ShowMontantTtc;
@@ -214,7 +215,7 @@ public partial class BLEditViewModel : BaseViewModel
     }
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Clients { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
+    public ObservableCollection<DocumentCatalogItem> CatalogItems { get; } = [];
     public ObservableCollection<BLLineRow> Lignes { get; } = [];
 
     [ObservableProperty] private int? _blId;
@@ -285,9 +286,11 @@ public partial class BLEditViewModel : BaseViewModel
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick || !CanEdit) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        var existing = item.Kind == DocumentCatalogKind.Product
+            ? Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0)
+            : Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0);
         if (existing != null)
         {
             existing.QuantiteLivree += 1;
@@ -297,7 +300,7 @@ public partial class BLEditViewModel : BaseViewModel
         else
         {
             var row = new BLLineRow();
-            row.ApplyCatalogProduct(p);
+            row.ApplyCatalogItem(item);
             row.QuantiteCommandee = 1;
             row.QuantiteLivree = 1;
             Lignes.Add(row);
@@ -308,6 +311,58 @@ public partial class BLEditViewModel : BaseViewModel
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
         RefreshTotals();
+    }
+
+    private void RebuildCatalog(IEnumerable<GestionCommerciale.Modules.Stock.Models.Produit> produits, IEnumerable<Service> services)
+    {
+        CatalogItems.Clear();
+        foreach (var p in produits)
+            CatalogItems.Add(DocumentCatalogItem.FromProduct(p));
+        foreach (var s in services)
+            CatalogItems.Add(DocumentCatalogItem.FromService(s));
+    }
+
+    private static BLLineRow MapBlLine(
+        BonLivraisonLigne l,
+        IReadOnlyDictionary<int, GestionCommerciale.Modules.Stock.Models.Produit> prodMap,
+        IReadOnlyDictionary<int, Service> serviceMap) =>
+        l.ServiceId is int sid
+            ? new BLLineRow
+            {
+                ServiceId = sid,
+                ProduitId = null,
+                Reference = serviceMap.GetValueOrDefault(sid)?.Reference ?? string.Empty,
+                Designation = l.Designation,
+                Conditionnement = serviceMap.GetValueOrDefault(sid)?.Unite ?? string.Empty,
+                QuantiteCommandee = l.QuantiteCommandee,
+                QuantiteLivree = l.QuantiteLivree,
+                PrixUnitaireHt = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTva = l.TauxTVA
+            }
+            : new BLLineRow
+            {
+                ProduitId = l.ProduitId,
+                ServiceId = null,
+                Reference = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid)?.Reference ?? string.Empty : string.Empty,
+                Designation = l.Designation,
+                Conditionnement = l.ProduitId is int pid2 ? prodMap.GetValueOrDefault(pid2)?.Unite ?? string.Empty : string.Empty,
+                QuantiteCommandee = l.QuantiteCommandee,
+                QuantiteLivree = l.QuantiteLivree,
+                PrixUnitaireHt = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTva = l.TauxTVA
+            };
+
+    private async Task<(Dictionary<int, GestionCommerciale.Modules.Stock.Models.Produit> ProdMap, Dictionary<int, Service> ServiceMap)> LoadCatalogAsync(
+        AppDbContext db, CancellationToken cancellationToken)
+    {
+        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
+            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
+        var services = await db.Services.AsNoTracking().Where(s => s.Actif)
+            .OrderBy(s => s.Designation).ThenBy(s => s.Reference).ToListAsync(cancellationToken);
+        RebuildCatalog(produits, services);
+        return (produits.ToDictionary(p => p.Id), services.ToDictionary(s => s.Id));
     }
 
     public async Task LoadAsync(int? id, CancellationToken cancellationToken = default)
@@ -324,10 +379,7 @@ public partial class BLEditViewModel : BaseViewModel
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
 
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
+        var (prodMap, serviceMap) = await LoadCatalogAsync(db, cancellationToken);
         var cfg = await _settings.GetAsync(cancellationToken);
         Devise = CurrencyHelper.FromSettings(cfg);
 
@@ -364,21 +416,7 @@ public partial class BLEditViewModel : BaseViewModel
         Date = new DateTimeOffset(b.Date);
         Note = userNote;
         foreach (var l in b.Lignes)
-        {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
-            Lignes.Add(new BLLineRow
-            {
-                ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
-                Designation = l.Designation,
-                Conditionnement = prod?.Unite ?? string.Empty,
-                QuantiteCommandee = l.QuantiteCommandee,
-                QuantiteLivree = l.QuantiteLivree,
-                PrixUnitaireHt = l.PrixUnitaireHT,
-                Remise = l.Remise,
-                TauxTva = l.TauxTVA
-            });
-        }
+            Lignes.Add(MapBlLine(l, prodMap, serviceMap));
 
         IsReadOnly = false;
         Title = _locale.Tf("BL_TitleNum", Numero);
@@ -403,10 +441,7 @@ public partial class BLEditViewModel : BaseViewModel
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
 
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
+        var (prodMap, _) = await LoadCatalogAsync(db, cancellationToken);
 
         ClientId = bcc.ClientId;
         DevisId = bcc.DevisId;
@@ -415,12 +450,13 @@ public partial class BLEditViewModel : BaseViewModel
         Numero = "(brouillon)";
         foreach (var l in bcc.Lignes.OrderBy(x => x.Id))
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
+            var prod = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid) : null;
             Lignes.Add(new BLLineRow
             {
                 ProduitId = l.ProduitId,
                 Reference = prod?.Reference ?? string.Empty,
                 Designation = l.Designation,
+                Conditionnement = prod?.Unite ?? string.Empty,
                 QuantiteCommandee = l.QuantiteCommandee,
                 QuantiteLivree = l.QuantiteCommandee,
                 PrixUnitaireHt = l.PrixUnitaireHT,
@@ -444,10 +480,7 @@ public partial class BLEditViewModel : BaseViewModel
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
 
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
+        var (prodMap, _) = await LoadCatalogAsync(db, cancellationToken);
         var cfg = await _settings.GetAsync(cancellationToken);
         Devise = CurrencyHelper.FromSettings(cfg);
 
@@ -460,7 +493,7 @@ public partial class BLEditViewModel : BaseViewModel
         Lignes.Clear();
         foreach (var l in d.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
+            var prod = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid) : null;
             Lignes.Add(new BLLineRow
             {
                 ProduitId = l.ProduitId,
@@ -486,18 +519,13 @@ public partial class BLEditViewModel : BaseViewModel
     private void AddLine()
     {
         if (!CanEdit) return;
-        var p = Produits.FirstOrDefault();
-        Lignes.Add(new BLLineRow
-        {
-            ProduitId = p?.Id ?? 0,
-            Reference = p?.Reference ?? string.Empty,
-            Designation = p?.Designation ?? string.Empty,
-            Conditionnement = p?.Unite ?? string.Empty,
-            QuantiteCommandee = 1,
-            QuantiteLivree = 1,
-            PrixUnitaireHt = p?.PrixVenteHT ?? 0,
-            TauxTva = p?.TauxTVA ?? 20
-        });
+        var item = CatalogItems.FirstOrDefault();
+        if (item == null) return;
+        var row = new BLLineRow();
+        row.ApplyCatalogItem(item);
+        row.QuantiteCommandee = 1;
+        row.QuantiteLivree = 1;
+        Lignes.Add(row);
     }
 
     [RelayCommand]
@@ -512,14 +540,10 @@ public partial class BLEditViewModel : BaseViewModel
 
     private void ApplyProduct(BLLineRow? row)
     {
-        if (row == null) return;
-        var p = Produits.FirstOrDefault(x => x.Id == row.ProduitId);
-        if (p == null) return;
-        row.Reference = p.Reference;
-        row.Designation = p.Designation;
-        row.Conditionnement = p.Unite;
-        row.PrixUnitaireHt = p.PrixVenteHT;
-        row.TauxTva = p.TauxTVA;
+        if (row == null || row.IsService || row.ProduitId is not int pid) return;
+        var item = CatalogItems.FirstOrDefault(x => x.Kind == DocumentCatalogKind.Product && x.Id == pid);
+        if (item == null) return;
+        row.ApplyCatalogItem(item);
         RefreshTotals();
     }
 
@@ -596,7 +620,8 @@ public partial class BLEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonLivraisonLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         QuantiteCommandee = l.QuantiteLivree,
                         QuantiteLivree = l.QuantiteLivree,
@@ -623,7 +648,8 @@ public partial class BLEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonLivraisonLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         QuantiteCommandee = l.QuantiteLivree,
                         QuantiteLivree = l.QuantiteLivree,

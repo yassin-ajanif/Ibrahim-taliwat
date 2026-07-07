@@ -27,7 +27,9 @@ public sealed class BonLivraisonWorkflowService : IBonLivraisonWorkflowService
             db,
             bonLivraisonId,
             bl.Numero,
-            bl.Lignes.Select(l => (l.ProduitId, l.QuantiteLivree)),
+            bl.Lignes
+                .Where(l => l.ProduitId is > 0)
+                .Select(l => (l.ProduitId!.Value, l.QuantiteLivree)),
             userId,
             cancellationToken);
 
@@ -46,7 +48,9 @@ public sealed class BonLivraisonWorkflowService : IBonLivraisonWorkflowService
             db,
             bonLivraisonId,
             bl.Numero,
-            bl.Lignes.Select(l => (l.ProduitId, l.QuantiteLivree)),
+            bl.Lignes
+                .Where(l => l.ProduitId is > 0)
+                .Select(l => (l.ProduitId!.Value, l.QuantiteLivree)),
             userId,
             cancellationToken);
 

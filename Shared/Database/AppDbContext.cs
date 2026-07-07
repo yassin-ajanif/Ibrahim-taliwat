@@ -1,4 +1,5 @@
 using GestionCommerciale.Modules.Charges.Models;
+using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Devis.Models;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Livraison.Models;
@@ -45,6 +46,7 @@ public class AppDbContext : DbContext
     public DbSet<AppSettingsRow> AppSettings => Set<AppSettingsRow>();
     public DbSet<TypeCharge> TypesCharge => Set<TypeCharge>();
     public DbSet<Charge> Charges => Set<Charge>();
+    public DbSet<Service> Services => Set<Service>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -177,6 +179,29 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Date);
             e.HasIndex(c => c.TypeChargeId);
             e.HasIndex(c => c.FournisseurId);
+        });
+
+        modelBuilder.Entity<Service>(e =>
+        {
+            e.ToTable("Services");
+            e.HasIndex(s => s.Reference).IsUnique();
+            e.HasIndex(s => s.Actif);
+        });
+
+        modelBuilder.Entity<BonLivraisonLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<FactureLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
         });
     }
 

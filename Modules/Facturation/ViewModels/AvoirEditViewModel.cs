@@ -375,10 +375,11 @@ public partial class AvoirEditViewModel : BaseViewModel
         Numero = _locale.T("Avoir_DraftPlaceholder");
         foreach (var l in f.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
+            if (l.ProduitId is not int pid) continue;
+            var prod = Produits.FirstOrDefault(p => p.Id == pid);
             var row = new AvoirLineRow
             {
-                ProduitId = l.ProduitId,
+                ProduitId = pid,
                 Reference = prod?.Reference ?? string.Empty,
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,

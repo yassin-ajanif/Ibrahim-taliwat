@@ -1,3 +1,4 @@
+using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Facturation.ViewModels;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Shared.Database;
@@ -63,16 +64,36 @@ public sealed class FactureBlLinkService : IFactureBlLinkService
             .Where(l => l.BLId == blId)
             .ToListAsync(cancellationToken);
 
-        return lines.Select(l => new FactureLineRow
+        var serviceIds = lines.Where(l => l.ServiceId.HasValue).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var services = serviceIds.Count == 0
+            ? new Dictionary<int, Service>()
+            : await db.Services.AsNoTracking()
+                .Where(s => serviceIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+        return lines.Select(l =>
         {
-            BonLivraisonId = blId,
-            ProduitId = l.ProduitId,
-            Designation = l.Designation,
-            Conditionnement = string.Empty,
-            Quantite = l.QuantiteLivree,
-            PrixUnitaireHt = l.PrixUnitaireHT,
-            Remise = l.Remise,
-            TauxTva = l.TauxTVA
+            var row = new FactureLineRow
+            {
+                BonLivraisonId = blId,
+                ProduitId = l.ProduitId,
+                ServiceId = l.ServiceId,
+                Designation = l.Designation,
+                Quantite = l.QuantiteLivree,
+                PrixUnitaireHt = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTva = l.TauxTVA
+            };
+            if (l.ServiceId is int sid && services.TryGetValue(sid, out var svc))
+            {
+                row.Reference = svc.Reference;
+                row.Conditionnement = svc.Unite;
+            }
+            else
+            {
+                row.Conditionnement = string.Empty;
+            }
+            return row;
         }).ToList();
     }
 

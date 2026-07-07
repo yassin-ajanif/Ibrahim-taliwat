@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
 using GestionCommerciale.Modules.Stock;
+using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Facturation.Services;
 using GestionCommerciale.Modules.Tiers.Models;
@@ -81,6 +82,7 @@ public partial class FactureEditViewModel : BaseViewModel
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Clients { get; } = [];
     public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
+    public ObservableCollection<Service> Services { get; } = [];
     public ObservableCollection<FactureLineRow> Lignes { get; } = [];
     public ObservableCollection<FacturePaiementRowViewModel> Paiements { get; } = [];
     public ObservableCollection<LinkedBlRow> LinkedBls { get; } = [];
@@ -356,7 +358,7 @@ public partial class FactureEditViewModel : BaseViewModel
     private void LineChanged(object? sender, PropertyChangedEventArgs e)
     {
         RefreshTotals();
-        if (e.PropertyName == nameof(FactureLineRow.ProduitId) && sender is FactureLineRow changed && changed.ProduitId != 0)
+        if (e.PropertyName == nameof(FactureLineRow.ProduitId) && sender is FactureLineRow changed && changed.ProduitId is > 0)
             ConsolidateDuplicateProductLines();
     }
 
@@ -388,7 +390,7 @@ public partial class FactureEditViewModel : BaseViewModel
 
     private void ConsolidateDuplicateProductLines()
     {
-        foreach (var g in Lignes.Where(l => l.ProduitId != 0).GroupBy(l => l.ProduitId).ToList())
+        foreach (var g in Lignes.Where(l => l.ProduitId is > 0).GroupBy(l => l.ProduitId).ToList())
         {
             if (g.Count() < 2) continue;
             var ordered = g.OrderBy(l => Lignes.IndexOf(l)).ToList();
@@ -523,13 +525,16 @@ public partial class FactureEditViewModel : BaseViewModel
         Note = f.Note;
         foreach (var l in f.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
+            var prod = l.ProduitId is int pid ? Produits.FirstOrDefault(p => p.Id == pid) : null;
+            var svc = l.ServiceId is int sid ? Services.FirstOrDefault(s => s.Id == sid) : null;
             var row = new FactureLineRow
             {
+                BonLivraisonId = l.BonLivraisonId,
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
+                Reference = prod?.Reference ?? svc?.Reference ?? string.Empty,
                 Designation = l.Designation,
-                Conditionnement = l.Conditionnement,
+                Conditionnement = string.IsNullOrWhiteSpace(l.Conditionnement) ? svc?.Unite ?? string.Empty : l.Conditionnement,
                 Quantite = l.Quantite,
                 PrixUnitaireHt = l.PrixUnitaireHT,
                 Remise = l.Remise,
@@ -561,6 +566,11 @@ public partial class FactureEditViewModel : BaseViewModel
             .SelectForListWithoutImageData().ToListAsync(cancellationToken);
         Produits.Clear();
         foreach (var p in produits) Produits.Add(p);
+
+        var services = await db.Services.AsNoTracking().Where(s => s.Actif)
+            .OrderBy(s => s.Designation).ThenBy(s => s.Reference).ToListAsync(cancellationToken);
+        Services.Clear();
+        foreach (var s in services) Services.Add(s);
     }
 
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
@@ -661,8 +671,10 @@ public partial class FactureEditViewModel : BaseViewModel
         var lines = await _blLinkService.LoadBlLinesAsync(blId, cancellationToken);
         foreach (var l in lines)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
-            l.Reference = prod?.Reference ?? string.Empty;
+            if (l.ServiceId is int sid)
+                l.Reference = Services.FirstOrDefault(s => s.Id == sid)?.Reference ?? l.Reference;
+            else if (l.ProduitId is int pid)
+                l.Reference = Produits.FirstOrDefault(p => p.Id == pid)?.Reference ?? l.Reference;
             l.PropertyChanged += LineChanged;
             Lignes.Add(l);
         }
@@ -699,8 +711,10 @@ public partial class FactureEditViewModel : BaseViewModel
             var lines = await _blLinkService.LoadBlLinesAsync(blId, cancellationToken);
             foreach (var l in lines)
             {
-                var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
-                l.Reference = prod?.Reference ?? string.Empty;
+                if (l.ServiceId is int sid)
+                    l.Reference = Services.FirstOrDefault(s => s.Id == sid)?.Reference ?? l.Reference;
+                else if (l.ProduitId is int pid)
+                    l.Reference = Produits.FirstOrDefault(p => p.Id == pid)?.Reference ?? l.Reference;
                 l.PropertyChanged += LineChanged;
                 Lignes.Add(l);
             }
@@ -764,7 +778,7 @@ public partial class FactureEditViewModel : BaseViewModel
         var p = Produits.FirstOrDefault();
         var row = new FactureLineRow
         {
-            ProduitId = p?.Id ?? 0,
+            ProduitId = p?.Id,
             Reference = p?.Reference ?? string.Empty,
             Designation = p?.Designation ?? string.Empty,
             Conditionnement = p?.Unite ?? string.Empty,
@@ -845,7 +859,8 @@ public partial class FactureEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new FactureLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,
@@ -889,7 +904,8 @@ public partial class FactureEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new FactureLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,

@@ -94,6 +94,7 @@ public sealed class PdfService : IPdfService
     {
         var cfg = await _settings.GetAsync(cancellationToken);
         var meta = await LoadProductMetaAsync(bl.Lignes.Select(l => l.ProduitId), cancellationToken);
+        var svcMeta = await LoadServiceMetaAsync(bl.Lignes.Select(l => l.ServiceId), cancellationToken);
         var blVis = _uiPreferences.GetDocumentLineColumnVisibility("bon_livraison");
         var totals = DocumentTotalsHelper.BonLivraisonTotals(bl.Lignes);
         var lineData = new List<StandardPdfLine>();
@@ -102,10 +103,10 @@ public sealed class PdfService : IPdfService
             var lht = DocumentTotalsHelper.LigneHT(l.QuantiteLivree, l.PrixUnitaireHT, l.Remise);
             var ttc = lht * (1 + l.TauxTVA / 100m);
             lineData.Add(new StandardPdfLine(
-                RefCell(meta, l.ProduitId),
+                DocumentLineRef(meta, svcMeta, l.ProduitId, l.ServiceId),
                 l.Designation,
                 FmtQty(l.QuantiteLivree),
-                UniteCell(meta, l.ProduitId),
+                DocumentLineUnite(meta, svcMeta, l.ProduitId, l.ServiceId, null),
                 FmtUnitPrice(l.PrixUnitaireHT),
                 FmtTvaPct(l.TauxTVA),
                 FmtMoney(l.Remise),
@@ -242,6 +243,7 @@ public sealed class PdfService : IPdfService
     {
         var cfg = await _settings.GetAsync(cancellationToken);
         var meta = await LoadProductMetaAsync(facture.Lignes.Select(l => l.ProduitId), cancellationToken);
+        var svcMeta = await LoadServiceMetaAsync(facture.Lignes.Select(l => l.ServiceId), cancellationToken);
         var totals = DocumentTotalsHelper.FactureTotals(facture.Lignes, facture.RemiseGlobale);
         var vis = _uiPreferences.GetDocumentLineColumnVisibility("facture");
         var lineData = new List<StandardPdfLine>();
@@ -250,10 +252,12 @@ public sealed class PdfService : IPdfService
             var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
             var ttc = lht * (1 + l.TauxTVA / 100m);
             lineData.Add(new StandardPdfLine(
-                RefCell(meta, l.ProduitId),
+                DocumentLineRef(meta, svcMeta, l.ProduitId, l.ServiceId),
                 l.Designation,
                 FmtQty(l.Quantite),
-                l.Conditionnement,
+                string.IsNullOrWhiteSpace(l.Conditionnement)
+                    ? DocumentLineUnite(meta, svcMeta, l.ProduitId, l.ServiceId, null)
+                    : l.Conditionnement,
                 FmtUnitPrice(l.PrixUnitaireHT),
                 FmtTvaPct(l.TauxTVA),
                 FmtMoney(l.Remise),
@@ -707,6 +711,31 @@ public sealed class PdfService : IPdfService
     private static string RefCell(Dictionary<int, ProductPdfMeta> meta, int produitId) =>
         produitId > 0 && meta.TryGetValue(produitId, out var m) && !string.IsNullOrWhiteSpace(m.Ref) ? m.Ref : "—";
 
+    private static string DocumentLineRef(
+        Dictionary<int, ProductPdfMeta> prodMeta,
+        Dictionary<int, ProductPdfMeta> svcMeta,
+        int? produitId,
+        int? serviceId)
+    {
+        if (serviceId is int sid && svcMeta.TryGetValue(sid, out var sm) && !string.IsNullOrWhiteSpace(sm.Ref))
+            return sm.Ref;
+        return RefCell(prodMeta, produitId ?? 0);
+    }
+
+    private static string DocumentLineUnite(
+        Dictionary<int, ProductPdfMeta> prodMeta,
+        Dictionary<int, ProductPdfMeta> svcMeta,
+        int? produitId,
+        int? serviceId,
+        string? conditionnement)
+    {
+        if (!string.IsNullOrWhiteSpace(conditionnement))
+            return conditionnement.Trim();
+        if (serviceId is int sid && svcMeta.TryGetValue(sid, out var sm))
+            return sm.Unite;
+        return UniteCell(prodMeta, produitId ?? 0);
+    }
+
     private static string UniteCell(Dictionary<int, ProductPdfMeta> meta, int produitId) =>
         produitId > 0 && meta.TryGetValue(produitId, out var m) ? m.Unite : string.Empty;
 
@@ -732,14 +761,27 @@ public sealed class PdfService : IPdfService
         _ => m.ToString()
     };
 
-    private async Task<Dictionary<int, ProductPdfMeta>> LoadProductMetaAsync(IEnumerable<int> productIds, CancellationToken cancellationToken)
+    private Task<Dictionary<int, ProductPdfMeta>> LoadProductMetaAsync(IEnumerable<int> productIds, CancellationToken cancellationToken) =>
+        LoadProductMetaAsync(productIds.Cast<int?>(), cancellationToken);
+
+    private async Task<Dictionary<int, ProductPdfMeta>> LoadProductMetaAsync(IEnumerable<int?> productIds, CancellationToken cancellationToken)
     {
-        var ids = productIds.Where(x => x > 0).Distinct().ToList();
+        var ids = productIds.Where(x => x is > 0).Select(x => x!.Value).Distinct().ToList();
         if (ids.Count == 0) return new Dictionary<int, ProductPdfMeta>();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Produits.AsNoTracking()
             .Where(p => ids.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, p => new ProductPdfMeta(p.Reference ?? "", p.Unite ?? ""), cancellationToken);
+    }
+
+    private async Task<Dictionary<int, ProductPdfMeta>> LoadServiceMetaAsync(IEnumerable<int?> serviceIds, CancellationToken cancellationToken)
+    {
+        var ids = serviceIds.Where(x => x is > 0).Select(x => x!.Value).Distinct().ToList();
+        if (ids.Count == 0) return new Dictionary<int, ProductPdfMeta>();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.Services.AsNoTracking()
+            .Where(s => ids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => new ProductPdfMeta(s.Reference ?? "", s.Unite ?? ""), cancellationToken);
     }
 
     private static IReadOnlyList<string> BuildFooterLines(AppSettingsRow cfg)

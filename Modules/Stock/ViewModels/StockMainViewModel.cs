@@ -255,8 +255,8 @@ public partial class StockMainViewModel : BaseViewModel
         var blPriceMap = blIds.Count == 0
             ? new Dictionary<(int, int), decimal>()
             : (await db.BonLivraisonLignes.AsNoTracking()
-                .Where(l => blIds.Contains(l.BLId))
-                .Select(l => new { l.BLId, l.ProduitId, l.PrixUnitaireHT })
+                .Where(l => blIds.Contains(l.BLId) && l.ProduitId != null)
+                .Select(l => new { l.BLId, ProduitId = l.ProduitId!.Value, l.PrixUnitaireHT })
                 .ToListAsync(cancellationToken))
                 .GroupBy(l => (l.BLId, l.ProduitId))
                 .ToDictionary(g => g.Key, g => g.Last().PrixUnitaireHT);

@@ -9,7 +9,8 @@ public class FactureLigne : BaseEntity
     public Facture? Facture { get; set; }
     public int? BonLivraisonId { get; set; }
     public BonLivraison? BonLivraison { get; set; }
-    public int ProduitId { get; set; }
+    public int? ProduitId { get; set; }
+    public int? ServiceId { get; set; }
     public string Designation { get; set; } = string.Empty;
     public decimal Quantite { get; set; }
     public decimal PrixUnitaireHT { get; set; }

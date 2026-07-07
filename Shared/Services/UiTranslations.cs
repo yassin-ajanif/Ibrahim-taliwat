@@ -23,6 +23,7 @@ public static class UiTranslations
         ["Nav_BR"] = ("Bons de réception", "أذون الاستلام"),
         ["Nav_FacturesFournisseur"] = ("Facturation achat", "فواتير الشراء"),
         ["Nav_Charges"] = ("Charges", "المصاريف"),
+        ["Nav_Services"] = ("Services", "الخدمات"),
         ["Nav_StockAdmin"] = ("Stock & administration", "المخزون والإدارة"),
         ["Nav_Stock"] = ("Stock", "المخزون"),
         ["Nav_Produits"] = ("Produits", "المنتجات"),
@@ -291,6 +292,18 @@ public static class UiTranslations
         ["Charge_ErrTypeInUse"] = ("Ce type est utilisé par des charges et ne peut pas être supprimé.", "هذا النوع مستخدم في مصاريف ولا يمكن حذفه."),
         ["Charge_TypeDeleted"] = ("Type supprimé.", "تم حذف النوع."),
         ["Charge_TypeUpdated"] = ("Type modifié.", "تم تعديل النوع."),
+
+        ["ServicesList_Title"] = ("Services", "الخدمات"),
+        ["Service_Title"] = ("Service", "خدمة"),
+        ["Service_NewTitle"] = ("Service (nouveau)", "خدمة (جديدة)"),
+        ["Service_TitleEdit"] = ("Service — {0}", "خدمة — {0}"),
+        ["Service_LblCoutHt"] = ("Coût HT", "التكلفة بدون ضريبة"),
+        ["Service_WmRefExample"] = ("Ex. SRV-LIV", "مثال SRV-LIV"),
+        ["Service_Saved"] = ("Enregistré.", "تم الحفظ."),
+        ["Service_ConfirmDelete"] = ("Supprimer le service « {0} » ?", "حذف الخدمة « {0} »؟"),
+        ["Service_ErrRequired"] = ("Référence et désignation requises.", "المرجع والتسمية مطلوبان."),
+        ["Service_ErrDuplicateRef"] = ("Cette référence existe déjà.", "هذا المرجع موجود مسبقاً."),
+        ["Service_ErrInUse"] = ("Ce service est utilisé sur des documents et ne peut pas être supprimé.", "هذه الخدمة مستخدمة في مستندات ولا يمكن حذفها."),
     };
 
     public static string Get(string key, string languageTag)

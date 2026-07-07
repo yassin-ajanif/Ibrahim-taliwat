@@ -3,6 +3,7 @@
              xmlns:vm="using:GestionCommerciale.Modules.Livraison.ViewModels"
              xmlns:m="using:GestionCommerciale.Modules.Tiers.Models"
              xmlns:stock="using:GestionCommerciale.Modules.Stock.Models"
+             xmlns:cat="using:GestionCommerciale.Shared.Helpers"
              xmlns:gc="using:GestionCommerciale.Shared.Controls"
              x:Class="GestionCommerciale.Modules.Livraison.Views.BLEditView"
              x:DataType="vm:BLEditViewModel">
@@ -69,8 +70,8 @@
         <AutoCompleteBox MinWidth="360" MaxWidth="520" VerticalAlignment="Center"
                          MinimumPrefixLength="1" MaxDropDownHeight="320"
                          Watermark="{Binding WmAddProduct}"
-                         ItemsSource="{Binding Produits}"
-                         ItemFilter="{Binding ProduitAutocompleteFilter}"
+                         ItemsSource="{Binding CatalogItems}"
+                         ItemFilter="{Binding CatalogAutocompleteFilter}"
                          Text="{Binding AddLineSearchText, Mode=TwoWay}"
                          SelectedItem="{Binding AddLineCatalogPick, Mode=TwoWay}"
                          IsEnabled="{Binding CanEdit}">
@@ -78,15 +79,8 @@
             <Binding Path="Reference"/>
           </AutoCompleteBox.ValueMemberBinding>
           <AutoCompleteBox.ItemTemplate>
-            <DataTemplate DataType="stock:Produit">
-              <TextBlock TextWrapping="Wrap">
-                <TextBlock.Text>
-                  <MultiBinding StringFormat="{}{0} — {1}">
-                    <Binding Path="Reference"/>
-                    <Binding Path="Designation"/>
-                  </MultiBinding>
-                </TextBlock.Text>
-              </TextBlock>
+            <DataTemplate DataType="cat:DocumentCatalogItem">
+              <TextBlock TextWrapping="Wrap" Text="{Binding DisplayLabel}"/>
             </DataTemplate>
           </AutoCompleteBox.ItemTemplate>
         </AutoCompleteBox>

@@ -47,7 +47,7 @@ public sealed class ReportService : IReportService
             })
             .ToListAsync(ct);
 
-        var prodIds = lignes.Select(l => l.ProduitId).Distinct().ToList();
+        var prodIds = lignes.Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
         var produits = await db.Produits.AsNoTracking()
             .Where(p => prodIds.Contains(p.Id))
             .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT, Categorie = p.Categorie != null ? p.Categorie.Nom : "" })
@@ -55,7 +55,8 @@ public sealed class ReportService : IReportService
         var prodMap = produits.ToDictionary(p => p.Id);
 
         var grouped = lignes
-            .GroupBy(l => l.ProduitId)
+            .Where(l => l.ProduitId is > 0)
+            .GroupBy(l => l.ProduitId!.Value)
             .Select(g =>
             {
                 var p = prodMap.GetValueOrDefault(g.Key);
@@ -115,7 +116,7 @@ public sealed class ReportService : IReportService
             .ToListAsync(ct);
         var clientMap = clients.ToDictionary(c => c.Id);
 
-        var allProdIds = factures.SelectMany(f => f.Lignes).Select(l => l.ProduitId).Distinct().ToList();
+        var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
         var produits = await db.Produits.AsNoTracking()
             .Where(p => allProdIds.Contains(p.Id))
             .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT })
@@ -132,7 +133,8 @@ public sealed class ReportService : IReportService
 
                 // Per-product sub-rows (profit before global discount)
                 var products = allLignes
-                    .GroupBy(l => l.ProduitId)
+                    .Where(l => l.ProduitId is > 0)
+                    .GroupBy(l => l.ProduitId!.Value)
                     .Select(pg =>
                     {
                         var p = prodMap.GetValueOrDefault(pg.Key);
@@ -163,7 +165,7 @@ public sealed class ReportService : IReportService
                     foreach (var l in f.Lignes)
                     {
                         var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
-                        var prixAchat = prodMap.GetValueOrDefault(l.ProduitId)?.PrixAchatHT ?? 0;
+                        var prixAchat = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0 : 0;
                         totalHt += lht * factor;
                         totalTva += lht * (l.TauxTVA / 100m) * factor;
                         totalCost += l.Quantite * prixAchat;
@@ -276,7 +278,7 @@ public sealed class ReportService : IReportService
             .ToListAsync(ct);
         var clientMap = clients.ToDictionary(c => c.Id);
 
-        var allProdIds = factures.SelectMany(f => f.Lignes).Select(l => l.ProduitId).Distinct().ToList();
+        var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
         var produits = await db.Produits.AsNoTracking()
             .Where(p => allProdIds.Contains(p.Id))
             .Select(p => new { p.Id, p.PrixAchatHT })
@@ -296,7 +298,7 @@ public sealed class ReportService : IReportService
                     foreach (var l in f.Lignes)
                     {
                         var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
-                        var prixAchat = prodMap.GetValueOrDefault(l.ProduitId)?.PrixAchatHT ?? 0;
+                        var prixAchat = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0 : 0;
                         ht += lht;
                         tva += lht * (l.TauxTVA / 100m);
                         cost += l.Quantite * prixAchat;
@@ -479,6 +481,7 @@ public sealed class ReportService : IReportService
                 Lignes = f.Lignes!.Select(l => new
                 {
                     l.ProduitId,
+                    l.ServiceId,
                     l.Quantite,
                     l.PrixUnitaireHT,
                     l.Remise,
@@ -487,12 +490,19 @@ public sealed class ReportService : IReportService
             })
             .ToListAsync(ct);
 
-        var allProdIds = factures.SelectMany(f => f.Lignes).Select(l => l.ProduitId).Distinct().ToList();
+        var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
         var prodMap = allProdIds.Count == 0
             ? new Dictionary<int, decimal>()
             : await db.Produits.AsNoTracking()
                 .Where(p => allProdIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, p => p.PrixAchatHT, ct);
+
+        var allSvcIds = factures.SelectMany(f => f.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var svcMap = allSvcIds.Count == 0
+            ? new Dictionary<int, decimal>()
+            : await db.Services.AsNoTracking()
+                .Where(s => allSvcIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, s => s.CoutHT, ct);
 
         decimal totalMargin = 0;
         foreach (var f in factures)
@@ -503,7 +513,10 @@ public sealed class ReportService : IReportService
             {
                 var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
                 ht += lht;
-                cost += l.Quantite * prodMap.GetValueOrDefault(l.ProduitId);
+                if (l.ProduitId is int pid)
+                    cost += l.Quantite * prodMap.GetValueOrDefault(pid);
+                else if (l.ServiceId is int sid)
+                    cost += l.Quantite * svcMap.GetValueOrDefault(sid);
             }
             ht *= factor;
             var profit = ht - cost;
