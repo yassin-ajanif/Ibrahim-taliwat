@@ -39,7 +39,7 @@ public sealed class AddLineCatalogSearchCoordinator
     {
         try
         {
-            await Task.Delay(250, cancellationToken);
+            await Task.Delay(100, cancellationToken);
             if (string.IsNullOrWhiteSpace(text))
             {
                 if (generation == _generation)
