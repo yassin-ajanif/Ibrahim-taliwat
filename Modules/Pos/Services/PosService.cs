@@ -1,55 +1,37 @@
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Modules.Pos.Models;
-using GestionCommerciale.Modules.Services;
-using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.Stock.Models;
 using GestionCommerciale.Modules.Stock.Services;
 using TiersEntity = GestionCommerciale.Modules.Tiers.Models.Tiers;
 using GestionCommerciale.Modules.Tiers.Models;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Helpers;
+using GestionCommerciale.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestionCommerciale.Modules.Pos.Services;
 
 public sealed class PosService : IPosService
 {
-    private const int SearchLimit = 20;
-
+    private readonly ICatalogSearchService _catalogSearch;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IStockMovementService _stock;
 
-    public PosService(IDbContextFactory<AppDbContext> dbFactory, IStockMovementService stock)
+    public PosService(
+        ICatalogSearchService catalogSearch,
+        IDbContextFactory<AppDbContext> dbFactory,
+        IStockMovementService stock)
     {
+        _catalogSearch = catalogSearch;
         _dbFactory = dbFactory;
         _stock = stock;
     }
 
     public async Task<List<DocumentCatalogItem>> SearchCatalogAsync(string query, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return [];
-
-        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-        var products = await db.Produits.AsNoTracking()
-            .Where(p => p.Actif)
-            .WhereSearchMatches(query)
-            .SelectForListWithoutImageData()
-            .Take(SearchLimit)
-            .ToListAsync(cancellationToken);
-
-        var services = await db.Services.AsNoTracking()
-            .Where(s => s.Actif)
-            .WhereSearchMatches(query)
-            .OrderBy(s => s.Reference)
-            .Take(SearchLimit)
-            .ToListAsync(cancellationToken);
-
-        return products.Select(DocumentCatalogItem.FromProduct)
-            .Concat(services.Select(DocumentCatalogItem.FromService))
-            .Take(SearchLimit)
-            .ToList();
+        var items = await _catalogSearch.SearchCatalogAsync(query, cancellationToken: cancellationToken);
+        return items.ToList();
     }
 
     public async Task<List<Facture>> SearchFacturesAsync(string query, CancellationToken cancellationToken = default)

@@ -57,8 +57,8 @@ public sealed class BonReceptionWorkflowService : IBonReceptionWorkflowService
             br.Id,
             br.Numero,
             br.Lignes
-                .Where(l => l.QuantiteRecue > 0)
-                .Select(l => (l.ProduitId, l.QuantiteRecue, l.PrixUnitaireHT)),
+                .Where(l => l.QuantiteRecue > 0 && l.ProduitId is > 0)
+                .Select(l => (l.ProduitId!.Value, l.QuantiteRecue, l.PrixUnitaireHT)),
             userId,
             cancellationToken);
     }

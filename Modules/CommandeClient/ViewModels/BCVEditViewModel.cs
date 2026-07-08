@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
 using GestionCommerciale.Modules.CommandeClient.Models;
 using GestionCommerciale.Modules.Livraison.ViewModels;
-using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Helpers;
 using GestionCommerciale.Shared.Models.Pdf;
@@ -31,6 +30,7 @@ public partial class BCVEditViewModel : BaseViewModel
     private readonly IPdfService _pdf;
     private readonly IPdfPrintService _pdfPrint;
     private readonly IAppSettingsService _settings;
+    private readonly AddLineCatalogSearchCoordinator _addLineSearch;
 
     public BCVEditViewModel(
         IDbContextFactory<AppDbContext> dbFactory,
@@ -43,7 +43,8 @@ public partial class BCVEditViewModel : BaseViewModel
         IUiPreferencesService uiPreferences,
         IPdfService pdf,
         IPdfPrintService pdfPrint,
-        IAppSettingsService settings)
+        IAppSettingsService settings,
+        ICatalogSearchService catalogSearch)
     {
         _dbFactory = dbFactory;
         _numbers = numbers;
@@ -56,6 +57,7 @@ public partial class BCVEditViewModel : BaseViewModel
         _pdf = pdf;
         _pdfPrint = pdfPrint;
         _settings = settings;
+        _addLineSearch = new AddLineCatalogSearchCoordinator(catalogSearch);
         _locale.CultureApplied += (_, _) => RefreshBccUi();
         LineGridColumns.PropertyChanged += OnLineGridColumnsPropertyChanged;
         _uiPreferences.LoadDocumentLineColumns("bon_commande_client", LineGridColumns);
@@ -92,8 +94,9 @@ public partial class BCVEditViewModel : BaseViewModel
 
     public DocumentLineGridColumnState LineGridColumns { get; } = new(supportsLineRemise: true);
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
+
+    public ObservableCollection<DocumentCatalogItem> AddLineSearchResults => _addLineSearch.Results;
 
     [ObservableProperty] private decimal _totalHt;
     [ObservableProperty] private decimal _totalTva;
@@ -122,10 +125,13 @@ public partial class BCVEditViewModel : BaseViewModel
 
     private void LineOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(BCVLineRow.ProduitId) && sender is BCVLineRow row && row.ProduitId != 0)
-            ConsolidateDuplicateProductLines();
+        if (e.PropertyName is nameof(BCVLineRow.ProduitId) or nameof(BCVLineRow.ServiceId)
+            && sender is BCVLineRow row && (row.ProduitId is > 0 || row.ServiceId is > 0))
+            ConsolidateDuplicateCatalogLines();
         RefreshTotals();
     }
+
+    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
 
     private void RefreshBccUi()
     {
@@ -141,7 +147,7 @@ public partial class BCVEditViewModel : BaseViewModel
         BtnAddLine = _locale.T("Btn_AddLine");
         BtnRemoveLine = _locale.T("Btn_RemoveLine");
         LblAddProduct = _locale.T("Devis_LblAddProduct");
-        WmAddProduct = _locale.T("Devis_WmSearchProduct");
+        WmAddProduct = _locale.T("Wm_SearchCatalog");
         LblTotals = _locale.T("Lbl_Totals");
         LblDocLineColumnsHint = _locale.T("DocLine_ColumnsHint");
         LblDocColRef = _locale.T("DocLine_ColRef");
@@ -158,7 +164,6 @@ public partial class BCVEditViewModel : BaseViewModel
     }
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Clients { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
     public ObservableCollection<BCVLineRow> Lignes { get; } = [];
 
     [ObservableProperty] private int? _bccId;
@@ -213,19 +218,22 @@ public partial class BCVEditViewModel : BaseViewModel
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick || !CanEdit) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        const decimal addQty = 1;
+        var existing = item.Kind == DocumentCatalogKind.Service
+            ? Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0)
+            : Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0);
         if (existing != null)
         {
-            existing.QuantiteCommandee += 1;
+            existing.QuantiteCommandee += addQty;
             SelectedLine = existing;
         }
         else
         {
             var row = new BCVLineRow();
-            row.ApplyCatalogProduct(p);
-            row.QuantiteCommandee = 1;
+            row.ApplyCatalogItem(item);
+            row.QuantiteCommandee = addQty;
             Lignes.Add(row);
             SelectedLine = row;
         }
@@ -233,25 +241,39 @@ public partial class BCVEditViewModel : BaseViewModel
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
         RefreshTotals();
     }
 
-    private void ConsolidateDuplicateProductLines()
+    private void ConsolidateDuplicateCatalogLines()
     {
-        foreach (var g in Lignes.Where(l => l.ProduitId != 0).GroupBy(l => l.ProduitId).ToList())
+        foreach (var g in Lignes.Where(l => l.ProduitId is > 0).GroupBy(l => l.ProduitId).ToList())
         {
             if (g.Count() < 2) continue;
-            var ordered = g.OrderBy(l => Lignes.IndexOf(l)).ToList();
-            var keep = ordered[0];
-            var extraQty = ordered.Skip(1).Sum(l => l.QuantiteCommandee);
-            foreach (var line in ordered.Skip(1))
-            {
-                if (ReferenceEquals(SelectedLine, line))
-                    SelectedLine = keep;
-                Lignes.Remove(line);
-            }
-            keep.QuantiteCommandee += extraQty;
+            MergeDuplicateGroup(g);
         }
+
+        foreach (var g in Lignes.Where(l => l.ServiceId is > 0).GroupBy(l => l.ServiceId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+    }
+
+    private void MergeDuplicateGroup(IEnumerable<BCVLineRow> group)
+    {
+        var ordered = group.OrderBy(l => Lignes.IndexOf(l)).ToList();
+        var keep = ordered[0];
+        var extraQty = ordered.Skip(1).Sum(l => l.QuantiteCommandee);
+        foreach (var line in ordered.Skip(1))
+        {
+            if (ReferenceEquals(SelectedLine, line))
+                SelectedLine = keep;
+            line.PropertyChanged -= LineOnPropertyChanged;
+            Lignes.Remove(line);
+        }
+
+        keep.QuantiteCommandee += extraQty;
     }
 
     private void RefreshTotals()
@@ -292,6 +314,7 @@ public partial class BCVEditViewModel : BaseViewModel
         BccId = id;
         Lignes.Clear();
         SelectedLine = null;
+        ResetAddProductSearch();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var clients = await db.Tiers.AsNoTracking()
             .Where(t => t.Actif && (t.Type == GestionCommerciale.Modules.Tiers.Models.TypeTiers.Client || t.Type == GestionCommerciale.Modules.Tiers.Models.TypeTiers.LesDeux))
@@ -299,10 +322,6 @@ public partial class BCVEditViewModel : BaseViewModel
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
 
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
         var cfg = await _settings.GetAsync(cancellationToken);
         Devise = CurrencyHelper.FromSettings(cfg);
 
@@ -322,11 +341,10 @@ public partial class BCVEditViewModel : BaseViewModel
         Note = b.Note;
         foreach (var l in b.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             Lignes.Add(new BCVLineRow
             {
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 QuantiteCommandee = l.QuantiteCommandee,
@@ -338,26 +356,19 @@ public partial class BCVEditViewModel : BaseViewModel
 
         Title = _locale.Tf("BCC_TitleNum", Numero);
         RefreshTotals();
+        ResetAddProductSearch();
+    }
+
+    private void ResetAddProductSearch()
+    {
+        _suppressAddLinePick = true;
+        AddLineCatalogPick = null;
+        AddLineSearchText = string.Empty;
+        _suppressAddLinePick = false;
+        _addLineSearch.Clear();
     }
 
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
-
-    [RelayCommand]
-    private void AddLine()
-    {
-        if (!CanEdit) return;
-        var p = Produits.FirstOrDefault();
-        Lignes.Add(new BCVLineRow
-        {
-            ProduitId = p?.Id ?? 0,
-            Reference = p?.Reference ?? string.Empty,
-            Designation = p?.Designation ?? string.Empty,
-            Conditionnement = p?.Unite ?? string.Empty,
-            QuantiteCommandee = 1,
-            PrixUnitaireHt = p?.PrixVenteHT ?? 0,
-            TauxTva = p?.TauxTVA ?? 20
-        });
-    }
 
     [RelayCommand]
     private void RemoveLine(BCVLineRow? row)
@@ -409,7 +420,8 @@ public partial class BCVEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonCommandeClientLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         QuantiteCommandee = l.QuantiteCommandee,
@@ -434,7 +446,8 @@ public partial class BCVEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonCommandeClientLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         QuantiteCommandee = l.QuantiteCommandee,

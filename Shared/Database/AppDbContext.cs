@@ -123,6 +123,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(l => l.BonReceptionId)
                 .OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(l => l.BonReceptionId);
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
         });
 
         modelBuilder.Entity<Facture>(e =>
@@ -137,6 +141,58 @@ public class AppDbContext : DbContext
                 .HasForeignKey(l => l.BonLivraisonId)
                 .OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(l => l.BonLivraisonId);
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<DevisLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<BonCommandeClientLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<AvoirLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<BonCommandeLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<BonReceptionLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
+        });
+
+        modelBuilder.Entity<AvoirFournisseurLigne>(e =>
+        {
+            e.HasOne<Service>().WithMany()
+                .HasForeignKey(l => l.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.ServiceId);
         });
 
         modelBuilder.Entity<Paiement>(e =>
@@ -189,14 +245,6 @@ public class AppDbContext : DbContext
         });
 
         modelBuilder.Entity<BonLivraisonLigne>(e =>
-        {
-            e.HasOne<Service>().WithMany()
-                .HasForeignKey(l => l.ServiceId)
-                .OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(l => l.ServiceId);
-        });
-
-        modelBuilder.Entity<FactureLigne>(e =>
         {
             e.HasOne<Service>().WithMany()
                 .HasForeignKey(l => l.ServiceId)

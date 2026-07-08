@@ -708,8 +708,8 @@ public sealed class PdfService : IPdfService
 
     private sealed record ProductPdfMeta(string Ref, string Unite);
 
-    private static string RefCell(Dictionary<int, ProductPdfMeta> meta, int produitId) =>
-        produitId > 0 && meta.TryGetValue(produitId, out var m) && !string.IsNullOrWhiteSpace(m.Ref) ? m.Ref : "—";
+    private static string RefCell(Dictionary<int, ProductPdfMeta> meta, int? produitId) =>
+        produitId is > 0 and int pid && meta.TryGetValue(pid, out var m) && !string.IsNullOrWhiteSpace(m.Ref) ? m.Ref : "—";
 
     private static string DocumentLineRef(
         Dictionary<int, ProductPdfMeta> prodMeta,
@@ -719,7 +719,7 @@ public sealed class PdfService : IPdfService
     {
         if (serviceId is int sid && svcMeta.TryGetValue(sid, out var sm) && !string.IsNullOrWhiteSpace(sm.Ref))
             return sm.Ref;
-        return RefCell(prodMeta, produitId ?? 0);
+        return RefCell(prodMeta, produitId);
     }
 
     private static string DocumentLineUnite(
@@ -733,13 +733,13 @@ public sealed class PdfService : IPdfService
             return conditionnement.Trim();
         if (serviceId is int sid && svcMeta.TryGetValue(sid, out var sm))
             return sm.Unite;
-        return UniteCell(prodMeta, produitId ?? 0);
+        return UniteCell(prodMeta, produitId);
     }
 
-    private static string UniteCell(Dictionary<int, ProductPdfMeta> meta, int produitId) =>
-        produitId > 0 && meta.TryGetValue(produitId, out var m) ? m.Unite : string.Empty;
+    private static string UniteCell(Dictionary<int, ProductPdfMeta> meta, int? produitId) =>
+        produitId is > 0 and int pid && meta.TryGetValue(pid, out var m) ? m.Unite : string.Empty;
 
-    private static string ConditionnementCell(string? conditionnement, Dictionary<int, ProductPdfMeta> meta, int produitId) =>
+    private static string ConditionnementCell(string? conditionnement, Dictionary<int, ProductPdfMeta> meta, int? produitId) =>
         string.IsNullOrWhiteSpace(conditionnement) ? UniteCell(meta, produitId) : conditionnement.Trim();
 
     private static string? SummarizePaiements(IReadOnlyList<Paiement>? paiements)

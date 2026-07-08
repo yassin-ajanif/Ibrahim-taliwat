@@ -2,17 +2,12 @@ using Avalonia.Controls;
 
 namespace GestionCommerciale.Shared.Helpers;
 
+/// <summary>
+/// AutoComplete filter for server-side catalog search: items are already filtered by
+/// <see cref="Services.ICatalogSearchService"/> — accept every result in the dropdown.
+/// </summary>
 public static class DocumentCatalogAutoComplete
 {
-    public static AutoCompleteFilterPredicate<object?> ItemFilter { get; } = static (search, item) =>
-    {
-        if (item is not DocumentCatalogItem entry) return false;
-        if (string.IsNullOrWhiteSpace(search)) return false;
-        var q = search.Trim();
-        static bool Match(string? s, string qq) =>
-            !string.IsNullOrEmpty(s) && s.Contains(qq, StringComparison.OrdinalIgnoreCase);
-        return Match(entry.Reference, q)
-               || Match(entry.Designation, q)
-               || Match(entry.CodeBarre, q);
-    };
+    public static AutoCompleteFilterPredicate<object?> ItemFilter { get; } =
+        static (_, item) => item is DocumentCatalogItem;
 }

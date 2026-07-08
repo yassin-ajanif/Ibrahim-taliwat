@@ -6,7 +6,8 @@ public class BonReceptionLigne : BaseEntity
 {
     public int BRId { get; set; }
     public BonReception? BonReception { get; set; }
-    public int ProduitId { get; set; }
+    public int? ProduitId { get; set; }
+    public int? ServiceId { get; set; }
     public string Designation { get; set; } = string.Empty;
     public decimal QuantiteRecue { get; set; }
     public decimal PrixUnitaireHT { get; set; }

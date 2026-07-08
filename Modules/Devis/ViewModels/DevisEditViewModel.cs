@@ -6,7 +6,6 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
-using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.Devis.Models;
 using GestionCommerciale.Modules.Facturation.ViewModels;
 using GestionCommerciale.Modules.Livraison.ViewModels;
@@ -34,6 +33,7 @@ public partial class DevisEditViewModel : BaseViewModel
     private readonly IUiPreferencesService _uiPreferences;
     private readonly IPdfService _pdf;
     private readonly IPdfPrintService _pdfPrint;
+    private readonly AddLineCatalogSearchCoordinator _addLineSearch;
 
     public DevisEditViewModel(
         IDbContextFactory<AppDbContext> dbFactory,
@@ -46,7 +46,8 @@ public partial class DevisEditViewModel : BaseViewModel
         ILocaleService locale,
         IUiPreferencesService uiPreferences,
         IPdfService pdf,
-        IPdfPrintService pdfPrint)
+        IPdfPrintService pdfPrint,
+        ICatalogSearchService catalogSearch)
     {
         _dbFactory = dbFactory;
         _numbers = numbers;
@@ -59,6 +60,7 @@ public partial class DevisEditViewModel : BaseViewModel
         _uiPreferences = uiPreferences;
         _pdf = pdf;
         _pdfPrint = pdfPrint;
+        _addLineSearch = new AddLineCatalogSearchCoordinator(catalogSearch);
         _locale.CultureApplied += (_, _) =>
         {
             RefreshDevisUi();
@@ -106,8 +108,9 @@ public partial class DevisEditViewModel : BaseViewModel
 
     public DocumentLineGridColumnState LineGridColumns { get; } = new();
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
+
+    public ObservableCollection<DocumentCatalogItem> AddLineSearchResults => _addLineSearch.Results;
 
     private void RefreshDevisUi()
     {
@@ -125,7 +128,7 @@ public partial class DevisEditViewModel : BaseViewModel
         LblValableJusqu = _locale.T("Lbl_ValableJusqu");
         WmNote = _locale.T("Lbl_Note");
         LblAddProduct = _locale.T("Devis_LblAddProduct");
-        WmAddProduct = _locale.T("Devis_WmSearchProduct");
+        WmAddProduct = _locale.T("Wm_SearchCatalog");
         BtnRemoveSelectedLine = _locale.T("Btn_RemoveSelectedLine");
         LblTotals = _locale.T("Lbl_Totals");
         LblDocLineColumnsHint = _locale.T("DocLine_ColumnsHint");
@@ -146,7 +149,6 @@ public partial class DevisEditViewModel : BaseViewModel
     }
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Clients { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
     public ObservableCollection<DevisLineRow> Lignes { get; } = [];
     public ObservableCollection<DevisConditionRow> Conditions { get; } = [];
 
@@ -200,47 +202,43 @@ public partial class DevisEditViewModel : BaseViewModel
 
     private void LineOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DevisLineRow.ProduitId) && sender is DevisLineRow row && row.ProduitId != 0)
-        {
-            HydrateLineProductFields(row);
-            ConsolidateDuplicateProductLines();
-        }
+        if (e.PropertyName is nameof(DevisLineRow.ProduitId) or nameof(DevisLineRow.ServiceId)
+            && sender is DevisLineRow row && (row.ProduitId is > 0 || row.ServiceId is > 0))
+            ConsolidateDuplicateCatalogLines();
         RefreshTotals();
     }
 
-    private void HydrateLineProductFields(DevisLineRow row)
-    {
-        if (row.ProduitId == 0) return;
-        var prod = Produits.FirstOrDefault(p => p.Id == row.ProduitId);
-        if (prod == null) return;
+    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
 
-        if (string.IsNullOrWhiteSpace(row.Reference))
-            row.Reference = prod.Reference;
-        if (string.IsNullOrWhiteSpace(row.Designation))
-            row.Designation = prod.Designation;
-        if (string.IsNullOrWhiteSpace(row.Conditionnement))
-            row.Conditionnement = prod.Unite;
-    }
-
-    /// <summary>Merges lines that share the same catalog product: quantities add, first line in order is kept.</summary>
-    private void ConsolidateDuplicateProductLines()
+    private void ConsolidateDuplicateCatalogLines()
     {
-        foreach (var g in Lignes.Where(l => l.ProduitId != 0).GroupBy(l => l.ProduitId).ToList())
+        foreach (var g in Lignes.Where(l => l.ProduitId is > 0).GroupBy(l => l.ProduitId).ToList())
         {
             if (g.Count() < 2) continue;
-            var ordered = g.OrderBy(l => Lignes.IndexOf(l)).ToList();
-            var keep = ordered[0];
-            var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
-            foreach (var line in ordered.Skip(1))
-            {
-                if (ReferenceEquals(SelectedLine, line))
-                    SelectedLine = keep;
-                line.PropertyChanged -= LineOnPropertyChanged;
-                Lignes.Remove(line);
-            }
-
-            keep.Quantite += extraQty;
+            MergeDuplicateGroup(g);
         }
+
+        foreach (var g in Lignes.Where(l => l.ServiceId is > 0).GroupBy(l => l.ServiceId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+    }
+
+    private void MergeDuplicateGroup(IEnumerable<DevisLineRow> group)
+    {
+        var ordered = group.OrderBy(l => Lignes.IndexOf(l)).ToList();
+        var keep = ordered[0];
+        var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
+        foreach (var line in ordered.Skip(1))
+        {
+            if (ReferenceEquals(SelectedLine, line))
+                SelectedLine = keep;
+            line.PropertyChanged -= LineOnPropertyChanged;
+            Lignes.Remove(line);
+        }
+
+        keep.Quantite += extraQty;
     }
 
     private void RefreshTotals()
@@ -324,10 +322,12 @@ public partial class DevisEditViewModel : BaseViewModel
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick || IsReadOnly) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
         const decimal addQty = 1;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        var existing = item.Kind == DocumentCatalogKind.Service
+            ? Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0)
+            : Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0);
         if (existing != null)
         {
             existing.Quantite += addQty;
@@ -335,17 +335,10 @@ public partial class DevisEditViewModel : BaseViewModel
         }
         else
         {
-            var row = new DevisLineRow
-            {
-                ProduitId = p.Id,
-                Reference = p.Reference,
-                Designation = p.Designation,
-                Conditionnement = p.Unite,
-                Quantite = addQty,
-                PrixUnitaireHt = p.PrixVenteHT,
-                Remise = 0,
-                TauxTva = p.TauxTVA
-            };
+            var row = new DevisLineRow();
+            row.ApplyCatalogItem(item);
+            row.Quantite = addQty;
+            row.Remise = 0;
             row.PropertyChanged += LineOnPropertyChanged;
             Lignes.Add(row);
             SelectedLine = row;
@@ -354,6 +347,7 @@ public partial class DevisEditViewModel : BaseViewModel
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
         RefreshTotals();
     }
 
@@ -373,11 +367,6 @@ public partial class DevisEditViewModel : BaseViewModel
             .OrderBy(t => t.Nom).ToListAsync(cancellationToken);
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
-
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
 
         if (id == null)
         {
@@ -402,19 +391,17 @@ public partial class DevisEditViewModel : BaseViewModel
         Note = d.Note;
         foreach (var l in d.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             var row = new DevisLineRow
             {
                 ProduitId = l.ProduitId,
-                Reference = string.IsNullOrWhiteSpace(prod?.Reference) ? string.Empty : prod.Reference,
-                Designation = string.IsNullOrWhiteSpace(l.Designation) ? (prod?.Designation ?? string.Empty) : l.Designation,
-                Conditionnement = string.IsNullOrWhiteSpace(l.Conditionnement) ? (prod?.Unite ?? string.Empty) : l.Conditionnement,
+                ServiceId = l.ServiceId,
+                Designation = l.Designation,
+                Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
                 PrixUnitaireHt = l.PrixUnitaireHT,
                 Remise = l.Remise,
                 TauxTva = l.TauxTVA
             };
-            HydrateLineProductFields(row);
             row.PropertyChanged += LineOnPropertyChanged;
             Lignes.Add(row);
         }
@@ -443,6 +430,7 @@ public partial class DevisEditViewModel : BaseViewModel
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
     }
 
     [RelayCommand]
@@ -551,7 +539,8 @@ public partial class DevisEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new DevisLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,
@@ -582,7 +571,8 @@ public partial class DevisEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new DevisLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,

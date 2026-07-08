@@ -53,6 +53,27 @@ public partial class FactureLineRow : ObservableObject
         NotifyMontants();
     }
 
+    public void ApplyCatalogItem(DocumentCatalogItem item)
+    {
+        if (item.Kind == DocumentCatalogKind.Service)
+        {
+            ServiceId = item.Id;
+            ProduitId = null;
+        }
+        else
+        {
+            ProduitId = item.Id;
+            ServiceId = null;
+        }
+
+        Reference = item.Reference;
+        Designation = item.Designation;
+        Conditionnement = item.Unite;
+        PrixUnitaireHt = item.PrixVenteHT;
+        TauxTva = item.TauxTVA;
+        NotifyMontants();
+    }
+
     private void NotifyMontants()
     {
         OnPropertyChanged(nameof(MontantHt));

@@ -7,7 +7,8 @@ namespace GestionCommerciale.Modules.FactureFournisseur.ViewModels;
 public partial class FactureFournisseurLineRow : ObservableObject
 {
     [ObservableProperty] private int? _bonReceptionId;
-    [ObservableProperty] private int _produitId;
+    [ObservableProperty] private int? _produitId;
+    [ObservableProperty] private int? _serviceId;
     [ObservableProperty] private string _reference = string.Empty;
     [ObservableProperty] private string _designation = string.Empty;
     [ObservableProperty] private string _conditionnement = string.Empty;
@@ -15,6 +16,8 @@ public partial class FactureFournisseurLineRow : ObservableObject
     [ObservableProperty] private decimal _prixUnitaireHt;
     [ObservableProperty] private decimal _remise;
     [ObservableProperty] private decimal _tauxTva;
+
+    public bool IsService => ServiceId is > 0;
 
     public decimal MontantHt => DocumentTotalsHelper.LigneHT(Quantite, PrixUnitaireHt, Remise);
 
@@ -28,11 +31,33 @@ public partial class FactureFournisseurLineRow : ObservableObject
     public void ApplyCatalogProduct(Produit p)
     {
         ProduitId = p.Id;
+        ServiceId = null;
         Reference = p.Reference;
         Designation = p.Designation;
         Conditionnement = p.Unite;
         PrixUnitaireHt = p.PrixAchatHT;
         TauxTva = p.TauxTVA;
+        NotifyMontants();
+    }
+
+    public void ApplyCatalogItem(DocumentCatalogItem item)
+    {
+        if (item.Kind == DocumentCatalogKind.Service)
+        {
+            ServiceId = item.Id;
+            ProduitId = null;
+        }
+        else
+        {
+            ProduitId = item.Id;
+            ServiceId = null;
+        }
+
+        Reference = item.Reference;
+        Designation = item.Designation;
+        Conditionnement = item.Unite;
+        PrixUnitaireHt = item.PrixAchatHT;
+        TauxTva = item.TauxTVA;
         NotifyMontants();
     }
 

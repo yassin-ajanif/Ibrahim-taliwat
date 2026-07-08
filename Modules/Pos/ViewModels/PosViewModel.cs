@@ -382,7 +382,7 @@ public partial class PosViewModel : BaseViewModel
                 avoir.Id,
                 avoir.Numero,
                 true,
-                avoir.Lignes.Select(l => (l.ProduitId, l.Quantite)),
+                avoir.Lignes.Where(l => l.ProduitId is > 0).Select(l => (l.ProduitId!.Value, l.Quantite)),
                 null,
                 cancellationToken);
             await db.SaveChangesAsync(cancellationToken);

@@ -18,6 +18,7 @@ public sealed class DocumentCatalogItem
     public string? CodeBarre { get; init; }
     public string Unite { get; init; } = "U";
     public decimal PrixVenteHT { get; init; }
+    public decimal PrixAchatHT { get; init; }
     public decimal TauxTVA { get; init; }
 
     public string DisplayLabel => $"{Reference} — {Designation}";
@@ -31,6 +32,7 @@ public sealed class DocumentCatalogItem
         CodeBarre = p.CodeBarre,
         Unite = p.Unite,
         PrixVenteHT = p.PrixVenteHT,
+        PrixAchatHT = p.PrixAchatHT,
         TauxTVA = p.TauxTVA
     };
 
@@ -42,6 +44,16 @@ public sealed class DocumentCatalogItem
         Designation = s.Designation,
         Unite = s.Unite,
         PrixVenteHT = s.PrixVenteHT,
+        PrixAchatHT = s.CoutHT,
         TauxTVA = s.TauxTVA
     };
+
+    public static IReadOnlyList<DocumentCatalogItem> MergeSearchResults(
+        IReadOnlyList<Produit> products,
+        IReadOnlyList<Service> services,
+        int limit = 20)
+        => products.Select(FromProduct)
+            .Concat(services.Select(FromService))
+            .Take(limit)
+            .ToList();
 }

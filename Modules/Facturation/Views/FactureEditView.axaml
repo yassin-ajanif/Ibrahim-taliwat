@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GestionCommerciale.Modules.Facturation.ViewModels"
              xmlns:m="using:GestionCommerciale.Modules.Tiers.Models"
-             xmlns:stock="using:GestionCommerciale.Modules.Stock.Models"
+             xmlns:cat="using:GestionCommerciale.Shared.Helpers"
              x:Class="GestionCommerciale.Modules.Facturation.Views.FactureEditView"
              x:Name="ThisView"
              x:DataType="vm:FactureEditViewModel">
@@ -118,11 +118,12 @@
         </StackPanel>
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding LblAddProduct}" VerticalAlignment="Center" Opacity="0.7"/>
         <AutoCompleteBox MinWidth="360" MaxWidth="520" VerticalAlignment="Center"
                          MinimumPrefixLength="1" MaxDropDownHeight="320"
-                         Watermark="{Binding LblCatalogHintFacture}"
-                         ItemsSource="{Binding Produits}"
-                         ItemFilter="{Binding ProduitAutocompleteFilter}"
+                         Watermark="{Binding WmAddProduct}"
+                         ItemsSource="{Binding AddLineSearchResults}"
+                         ItemFilter="{x:Static cat:DocumentCatalogAutoComplete.ItemFilter}"
                          Text="{Binding AddLineSearchText, Mode=TwoWay}"
                          SelectedItem="{Binding AddLineCatalogPick, Mode=TwoWay}"
                          IsEnabled="{Binding CanEditDraft}">
@@ -130,15 +131,8 @@
             <Binding Path="Reference"/>
           </AutoCompleteBox.ValueMemberBinding>
           <AutoCompleteBox.ItemTemplate>
-            <DataTemplate DataType="stock:Produit">
-              <TextBlock TextWrapping="Wrap">
-                <TextBlock.Text>
-                  <MultiBinding StringFormat="{}{0} — {1}">
-                    <Binding Path="Reference"/>
-                    <Binding Path="Designation"/>
-                  </MultiBinding>
-                </TextBlock.Text>
-              </TextBlock>
+            <DataTemplate DataType="cat:DocumentCatalogItem">
+              <TextBlock TextWrapping="Wrap" Text="{Binding DisplayLabel}"/>
             </DataTemplate>
           </AutoCompleteBox.ItemTemplate>
         </AutoCompleteBox>

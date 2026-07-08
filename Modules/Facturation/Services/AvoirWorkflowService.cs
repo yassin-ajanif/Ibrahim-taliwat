@@ -52,7 +52,7 @@ public sealed class AvoirWorkflowService : IAvoirWorkflowService
             avoir.Id,
             avoir.Numero,
             avoir.RetourMarchandise,
-            avoir.Lignes.Select(l => (l.ProduitId, l.Quantite)),
+            avoir.Lignes.Where(l => l.ProduitId is > 0).Select(l => (l.ProduitId!.Value, l.Quantite)),
             userId,
             cancellationToken);
 

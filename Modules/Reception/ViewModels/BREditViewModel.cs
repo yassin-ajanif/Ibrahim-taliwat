@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
-using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.CommandeFournisseur.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Services;
 using GestionCommerciale.Modules.FactureFournisseur.ViewModels;
@@ -39,6 +39,7 @@ public partial class BREditViewModel : BaseViewModel
     private readonly IPdfPrintService _pdfPrint;
     private readonly IAppSettingsService _settings;
     private readonly IFactureFournisseurBrLinkService _brLinkService;
+    private readonly AddLineCatalogSearchCoordinator _addLineSearch;
     private int? _sourceBonCommandeId;
 
     public BREditViewModel(
@@ -55,7 +56,8 @@ public partial class BREditViewModel : BaseViewModel
         IPdfService pdf,
         IPdfPrintService pdfPrint,
         IAppSettingsService settings,
-        IFactureFournisseurBrLinkService brLinkService)
+        IFactureFournisseurBrLinkService brLinkService,
+        ICatalogSearchService catalogSearch)
     {
         _dbFactory = dbFactory;
         _numbers = numbers;
@@ -71,6 +73,7 @@ public partial class BREditViewModel : BaseViewModel
         _pdfPrint = pdfPrint;
         _settings = settings;
         _brLinkService = brLinkService;
+        _addLineSearch = new AddLineCatalogSearchCoordinator(catalogSearch);
         _locale.CultureApplied += (_, _) => RefreshBrUi();
         LineGridColumns.PropertyChanged += OnLineGridColumnsPropertyChanged;
         _uiPreferences.LoadDocumentLineColumns("bon_reception", LineGridColumns);
@@ -89,7 +92,6 @@ public partial class BREditViewModel : BaseViewModel
     [ObservableProperty] private string _wmSupplierSearch = string.Empty;
     [ObservableProperty] private string _lblDateBr = string.Empty;
     [ObservableProperty] private string _btnAddLine = string.Empty;
-    [ObservableProperty] private string _btnApplyProduct = string.Empty;
     [ObservableProperty] private string _btnRemoveLine = string.Empty;
     [ObservableProperty] private string _lblAddProduct = string.Empty;
     [ObservableProperty] private string _wmAddProduct = string.Empty;
@@ -126,8 +128,9 @@ public partial class BREditViewModel : BaseViewModel
 
     public DocumentLineGridColumnState LineGridColumns { get; } = new(supportsLineRemise: false);
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
+
+    public ObservableCollection<DocumentCatalogItem> AddLineSearchResults => _addLineSearch.Results;
 
     public bool ShowTotalTva => LineGridColumns.ShowTva && LineGridColumns.ShowMontantTtc;
     public bool ShowTotalTtc => LineGridColumns.ShowMontantTtc && LineGridColumns.ShowTva;
@@ -155,7 +158,15 @@ public partial class BREditViewModel : BaseViewModel
         RefreshTotals();
     }
 
-    private void LineOnPropertyChanged(object? sender, PropertyChangedEventArgs e) => RefreshTotals();
+    private void LineOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(BRLineRow.ProduitId) or nameof(BRLineRow.ServiceId)
+            && sender is BRLineRow row && (row.ProduitId is > 0 || row.ServiceId is > 0))
+            ConsolidateDuplicateCatalogLines();
+        RefreshTotals();
+    }
+
+    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
 
     private void RefreshTotals()
     {
@@ -192,10 +203,9 @@ public partial class BREditViewModel : BaseViewModel
         WmSupplierSearch = _locale.T("Wm_SearchSupplier");
         LblDateBr = _locale.T("Lbl_DateBR");
         BtnAddLine = _locale.T("Btn_AddLine");
-        BtnApplyProduct = _locale.T("Btn_ApplyProduct");
         BtnRemoveLine = _locale.T("Btn_RemoveLine");
         LblAddProduct = _locale.T("Devis_LblAddProduct");
-        WmAddProduct = _locale.T("Devis_WmSearchProduct");
+        WmAddProduct = _locale.T("Wm_SearchCatalog");
         WmNote = _locale.T("Lbl_Note");
         LblDocLineColumnsHint = _locale.T("DocLine_ColumnsHint");
         LblDocColRef = _locale.T("DocLine_ColRef");
@@ -215,7 +225,6 @@ public partial class BREditViewModel : BaseViewModel
     partial void OnIsReadOnlyChanged(bool value) => OnPropertyChanged(nameof(CanEdit));
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Fournisseurs { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
     public ObservableCollection<BRLineRow> Lignes { get; } = [];
 
     [ObservableProperty] private int? _brId;
@@ -278,25 +287,70 @@ public partial class BREditViewModel : BaseViewModel
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick || !CanEdit) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        const decimal addQty = 1;
+        var existing = item.Kind == DocumentCatalogKind.Service
+            ? Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0)
+            : Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0);
         if (existing != null)
         {
-            existing.QuantiteRecue += 1;
+            existing.QuantiteRecue += addQty;
             SelectedLine = existing;
         }
         else
         {
             var row = new BRLineRow();
-            row.ApplyCatalogProduct(p);
-            row.QuantiteRecue = 1;
+            row.ApplyCatalogItem(item);
+            row.QuantiteRecue = addQty;
             Lignes.Add(row);
             SelectedLine = row;
         }
+
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
+        RefreshTotals();
+    }
+
+    private void ConsolidateDuplicateCatalogLines()
+    {
+        foreach (var g in Lignes.Where(l => l.ProduitId is > 0).GroupBy(l => l.ProduitId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+
+        foreach (var g in Lignes.Where(l => l.ServiceId is > 0).GroupBy(l => l.ServiceId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+    }
+
+    private void MergeDuplicateGroup(IEnumerable<BRLineRow> group)
+    {
+        var ordered = group.OrderBy(l => Lignes.IndexOf(l)).ToList();
+        var keep = ordered[0];
+        var extraQty = ordered.Skip(1).Sum(l => l.QuantiteRecue);
+        foreach (var line in ordered.Skip(1))
+        {
+            if (ReferenceEquals(SelectedLine, line))
+                SelectedLine = keep;
+            Lignes.Remove(line);
+        }
+
+        keep.QuantiteRecue += extraQty;
+    }
+
+    private void ResetAddProductSearch()
+    {
+        _suppressAddLinePick = true;
+        AddLineCatalogPick = null;
+        AddLineSearchText = string.Empty;
+        _suppressAddLinePick = false;
+        _addLineSearch.Clear();
     }
 
     public async Task LoadAsync(int? id, CancellationToken cancellationToken = default)
@@ -304,17 +358,14 @@ public partial class BREditViewModel : BaseViewModel
         _sourceBonCommandeId = null;
         BrId = id;
         Lignes.Clear();
+        SelectedLine = null;
+        ResetAddProductSearch();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         var fournisseurs = await db.Tiers.AsNoTracking()
             .Where(t => t.Actif && (t.Type == TypeTiers.Fournisseur || t.Type == TypeTiers.LesDeux))
             .OrderBy(t => t.Nom).ToListAsync(cancellationToken);
         Fournisseurs.Clear();
         foreach (var f in fournisseurs) Fournisseurs.Add(f);
-
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
 
         var cfg = await _settings.GetAsync(cancellationToken);
         Devise = CurrencyHelper.FromSettings(cfg);
@@ -341,13 +392,11 @@ public partial class BREditViewModel : BaseViewModel
         Note = b.Note;
         foreach (var l in b.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             Lignes.Add(new BRLineRow
             {
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
                 Designation = l.Designation,
-                Conditionnement = prod?.Unite ?? string.Empty,
                 QuantiteRecue = l.QuantiteRecue,
                 PrixUnitaireHt = l.PrixUnitaireHT,
                 TauxTva = l.TauxTVA
@@ -357,6 +406,7 @@ public partial class BREditViewModel : BaseViewModel
         IsReadOnly = false;
         Title = _locale.Tf("BR_TitleNum", Numero);
         RefreshTotals();
+        ResetAddProductSearch();
     }
 
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
@@ -367,6 +417,7 @@ public partial class BREditViewModel : BaseViewModel
         BrId = null;
         _sourceBonCommandeId = bonCommandeId;
         Lignes.Clear();
+        ResetAddProductSearch();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
         var bc = await db.BonsCommande.Include(x => x.Lignes).FirstAsync(x => x.Id == bonCommandeId, cancellationToken);
@@ -377,24 +428,18 @@ public partial class BREditViewModel : BaseViewModel
         Fournisseurs.Clear();
         foreach (var f in fournisseurs) Fournisseurs.Add(f);
 
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
-
         FournisseurId = bc.FournisseurId;
         Date = new DateTimeOffset(DateTime.Today);
         Note = string.Empty;
         Numero = "(brouillon)";
         foreach (var l in bc.Lignes.OrderBy(x => x.Id))
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             Lignes.Add(new BRLineRow
             {
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
                 Designation = l.Designation,
-                Conditionnement = prod?.Unite ?? string.Empty,
+                Conditionnement = l.Conditionnement,
                 QuantiteRecue = l.QuantiteCommandee,
                 PrixUnitaireHt = l.PrixUnitaireHT,
                 TauxTva = l.TauxTVA
@@ -404,23 +449,8 @@ public partial class BREditViewModel : BaseViewModel
         IsReadOnly = false;
         Title = _locale.Tf("BR_NewFromBc", bc.Numero);
         RefreshTotals();
+        ResetAddProductSearch();
         return true;
-    }
-
-    [RelayCommand]
-    private void AddLine()
-    {
-        if (!CanEdit) return;
-        var p = Produits.FirstOrDefault();
-        var row = new BRLineRow();
-        if (p != null)
-            row.ApplyCatalogProduct(p);
-        else
-        {
-            row.TauxTva = 20;
-        }
-        row.QuantiteRecue = 1;
-        Lignes.Add(row);
     }
 
     [RelayCommand]
@@ -428,17 +458,6 @@ public partial class BREditViewModel : BaseViewModel
     {
         if (!CanEdit || row == null) return;
         Lignes.Remove(row);
-    }
-
-    [RelayCommand]
-    private void ApplyProductToSelected() => ApplyProduct(SelectedLine);
-
-    private void ApplyProduct(BRLineRow? row)
-    {
-        if (row == null) return;
-        var p = Produits.FirstOrDefault(x => x.Id == row.ProduitId);
-        if (p == null) return;
-        row.ApplyCatalogProduct(p);
     }
 
     [RelayCommand]
@@ -491,7 +510,8 @@ public partial class BREditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonReceptionLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         QuantiteRecue = l.QuantiteRecue,
                         PrixUnitaireHT = l.PrixUnitaireHt,
@@ -516,7 +536,8 @@ public partial class BREditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new BonReceptionLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         QuantiteRecue = l.QuantiteRecue,
                         PrixUnitaireHT = l.PrixUnitaireHt,

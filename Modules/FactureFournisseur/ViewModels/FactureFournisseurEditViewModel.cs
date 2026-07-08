@@ -5,7 +5,6 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
-using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Services;
@@ -37,6 +36,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
     private readonly IPdfService _pdf;
     private readonly IPdfPrintService _pdfPrint;
     private readonly IFactureFournisseurBrLinkService _brLinkService;
+    private readonly AddLineCatalogSearchCoordinator _addLineSearch;
 
     public FactureFournisseurEditViewModel(
         IDbContextFactory<AppDbContext> dbFactory,
@@ -51,7 +51,8 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         ILocaleService locale,
         IUiPreferencesService uiPreferences,
         IPdfService pdf,
-        IPdfPrintService pdfPrint)
+        IPdfPrintService pdfPrint,
+        ICatalogSearchService catalogSearch)
     {
         _dbFactory = dbFactory;
         _numbers = numbers;
@@ -66,6 +67,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         _pdf = pdf;
         _pdfPrint = pdfPrint;
         _brLinkService = brLinkService;
+        _addLineSearch = new AddLineCatalogSearchCoordinator(catalogSearch);
         _locale.CultureApplied += (_, _) =>
         {
             RefreshFactureFournisseurUi();
@@ -78,8 +80,9 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
     }
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Fournisseurs { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
     public ObservableCollection<FactureFournisseurLineRow> Lignes { get; } = [];
+
+    public ObservableCollection<DocumentCatalogItem> AddLineSearchResults => _addLineSearch.Results;
     public ObservableCollection<FactureFournisseurPaiementRowViewModel> Paiements { get; } = [];
     public ObservableCollection<LinkedBrRow> LinkedBrs { get; } = [];
 
@@ -119,7 +122,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
     [ObservableProperty] private string _lblDateFacture = string.Empty;
     [ObservableProperty] private string _lblDateEcheance = string.Empty;
     [ObservableProperty] private string _btnRemoveLine = string.Empty;
-    [ObservableProperty] private string _lblCatalogHintFactureFournisseur = string.Empty;
+    [ObservableProperty] private string _wmAddProduct = string.Empty;
     [ObservableProperty] private string _lblTotals = string.Empty;
     [ObservableProperty] private string _devise = string.Empty;
     [ObservableProperty] private string _totalHtLabel = string.Empty;
@@ -156,7 +159,6 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
     public bool ShowTotalTtc => LineGridColumns.ShowMontantTtc && LineGridColumns.ShowTva;
     public bool HighlightHtTotal => !ShowTotalTtc;
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
 
     private bool _suppressAddLinePick;
@@ -185,7 +187,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         LblDateFacture = _locale.T("Lbl_DateFacture");
         LblDateEcheance = _locale.T("Lbl_DateEcheance");
         BtnRemoveLine = _locale.T("Btn_RemoveLine");
-        LblCatalogHintFactureFournisseur = _locale.T("Faf_CatalogHint");
+        WmAddProduct = _locale.T("Wm_SearchCatalog");
         LblTotals = _locale.T("Lbl_Totals");
         LblPaymentsRecorded = _locale.T("Lbl_PaymentsRecorded");
         LblMontant = _locale.T("Lbl_Montant");
@@ -340,53 +342,82 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
     private void LineChanged(object? sender, PropertyChangedEventArgs e)
     {
         RefreshTotals();
-        if (e.PropertyName == nameof(FactureFournisseurLineRow.ProduitId) && sender is FactureFournisseurLineRow changed && changed.ProduitId != 0)
-            ConsolidateDuplicateProductLines();
+        if (e.PropertyName is nameof(FactureFournisseurLineRow.ProduitId) or nameof(FactureFournisseurLineRow.ServiceId)
+            && sender is FactureFournisseurLineRow changed && (changed.ProduitId is > 0 || changed.ServiceId is > 0))
+            ConsolidateDuplicateCatalogLines();
     }
+
+    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
 
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        const decimal addQty = 1;
+        var existing = item.Kind == DocumentCatalogKind.Service
+            ? Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0 && !l.BonReceptionId.HasValue)
+            : Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0 && !l.BonReceptionId.HasValue);
         if (existing != null)
         {
-            existing.Quantite += 1;
+            existing.Quantite += addQty;
             SelectedLine = existing;
         }
         else
         {
             var row = new FactureFournisseurLineRow();
-            row.ApplyCatalogProduct(p);
-            row.Quantite = 1;
+            row.ApplyCatalogItem(item);
+            row.Quantite = addQty;
             row.PropertyChanged += LineChanged;
             Lignes.Add(row);
             SelectedLine = row;
         }
+
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
         RefreshTotals();
     }
 
-    private void ConsolidateDuplicateProductLines()
+    private void ConsolidateDuplicateCatalogLines()
     {
-        foreach (var g in Lignes.Where(l => l.ProduitId != 0).GroupBy(l => l.ProduitId).ToList())
+        foreach (var g in Lignes.Where(l => l.ProduitId is > 0 && !l.BonReceptionId.HasValue).GroupBy(l => l.ProduitId).ToList())
         {
             if (g.Count() < 2) continue;
-            var ordered = g.OrderBy(l => Lignes.IndexOf(l)).ToList();
-            var keep = ordered[0];
-            var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
-            foreach (var line in ordered.Skip(1))
-            {
-                if (ReferenceEquals(SelectedLine, line))
-                    SelectedLine = keep;
-                line.PropertyChanged -= LineChanged;
-                Lignes.Remove(line);
-            }
-            keep.Quantite += extraQty;
+            MergeDuplicateGroup(g);
         }
+
+        foreach (var g in Lignes.Where(l => l.ServiceId is > 0 && !l.BonReceptionId.HasValue).GroupBy(l => l.ServiceId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+    }
+
+    private void MergeDuplicateGroup(IEnumerable<FactureFournisseurLineRow> group)
+    {
+        var ordered = group.OrderBy(l => Lignes.IndexOf(l)).ToList();
+        var keep = ordered[0];
+        var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
+        foreach (var line in ordered.Skip(1))
+        {
+            if (ReferenceEquals(SelectedLine, line))
+                SelectedLine = keep;
+            line.PropertyChanged -= LineChanged;
+            Lignes.Remove(line);
+        }
+
+        keep.Quantite += extraQty;
+    }
+
+    private void ResetAddProductSearch()
+    {
+        _suppressAddLinePick = true;
+        AddLineCatalogPick = null;
+        AddLineSearchText = string.Empty;
+        _suppressAddLinePick = false;
+        _addLineSearch.Clear();
     }
 
     private void RefreshTotals()
@@ -459,6 +490,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         Devise = CurrencyHelper.FromSettings(cfg);
         LinkedBrs.Clear();
         Lignes.Clear();
+        ResetAddProductSearch();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         await LoadLookupsAsync(db, cancellationToken);
 
@@ -493,12 +525,11 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         Note = f.Note;
         foreach (var l in f.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             var row = new FactureFournisseurLineRow
             {
                 BonReceptionId = l.BonReceptionId,
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
@@ -518,6 +549,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         CanEditDraft = true;
         Title = _locale.Tf("Faf_TitleNum", Numero);
         RefreshTotals();
+        ResetAddProductSearch();
     }
 
     private async Task LoadLookupsAsync(AppDbContext db, CancellationToken cancellationToken)
@@ -527,11 +559,6 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
             .OrderBy(t => t.Nom).ToListAsync(cancellationToken);
         Fournisseurs.Clear();
         foreach (var c in fournisseurs) Fournisseurs.Add(c);
-
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
     }
 
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
@@ -585,8 +612,6 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         var lines = await _brLinkService.LoadBrLinesAsync(brId, cancellationToken);
         foreach (var l in lines)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
-            l.Reference = prod?.Reference ?? string.Empty;
             l.PropertyChanged += LineChanged;
             Lignes.Add(l);
         }
@@ -602,6 +627,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         Devise = CurrencyHelper.FromSettings(cfg);
         LinkedBrs.Clear();
         Lignes.Clear();
+        ResetAddProductSearch();
         FactureFournisseurId = null;
         Date = new DateTimeOffset(DateTime.Today);
         DateEcheance = Date.AddDays(30);
@@ -621,8 +647,6 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
             var lines = await _brLinkService.LoadBrLinesAsync(brId, cancellationToken);
             foreach (var l in lines)
             {
-                var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
-                l.Reference = prod?.Reference ?? string.Empty;
                 l.PropertyChanged += LineChanged;
                 Lignes.Add(l);
             }
@@ -634,26 +658,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         Paiements.Clear();
         Title = brIds.Count > 1 ? _locale.T("Faf_FromMultiBr") : _locale.T("Faf_FromBr");
         RefreshTotals();
-    }
-
-    [RelayCommand]
-    private void AddLine()
-    {
-        var p = Produits.FirstOrDefault();
-        var row = new FactureFournisseurLineRow
-        {
-            ProduitId = p?.Id ?? 0,
-            Reference = p?.Reference ?? string.Empty,
-            Designation = p?.Designation ?? string.Empty,
-            Conditionnement = p?.Unite ?? string.Empty,
-            Quantite = 1,
-            PrixUnitaireHt = p?.PrixAchatHT ?? 0,
-            Remise = 0,
-            TauxTva = p?.TauxTVA ?? 20
-        };
-        row.PropertyChanged += LineChanged;
-        Lignes.Add(row);
-        RefreshTotals();
+        ResetAddProductSearch();
     }
 
     [RelayCommand]
@@ -721,7 +726,8 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new FactureFournisseurLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,
@@ -761,7 +767,8 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
                 {
                     entity.Lignes.Add(new FactureFournisseurLigne
                     {
-                        ProduitId = l.ProduitId,
+                        ProduitId = l.IsService ? null : l.ProduitId,
+                        ServiceId = l.IsService ? l.ServiceId : null,
                         Designation = l.Designation,
                         Conditionnement = l.Conditionnement,
                         Quantite = l.Quantite,

@@ -6,7 +6,8 @@ public class BonCommandeClientLigne : BaseEntity
 {
     public int BonCommandeClientId { get; set; }
     public BonCommandeClient? BonCommandeClient { get; set; }
-    public int ProduitId { get; set; }
+    public int? ProduitId { get; set; }
+    public int? ServiceId { get; set; }
     public string Designation { get; set; } = string.Empty;
     public decimal QuantiteCommandee { get; set; }
     public decimal PrixUnitaireHT { get; set; }

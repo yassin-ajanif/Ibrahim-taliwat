@@ -65,6 +65,7 @@ public sealed class FactureFournisseurBrLinkService : IFactureFournisseurBrLinkS
         {
             BonReceptionId = brId,
             ProduitId = l.ProduitId,
+            ServiceId = l.ServiceId,
             Designation = l.Designation,
             Conditionnement = string.Empty,
             Quantite = l.QuantiteRecue,

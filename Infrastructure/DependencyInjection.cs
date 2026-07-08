@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddSingleton<ILocaleService, LocaleService>();
         services.AddSingleton<IDocumentNumberService, DocumentNumberService>();
         services.AddSingleton<IStockMovementService, StockMovementService>();
+        services.AddSingleton<ICatalogSearchService, CatalogSearchService>();
         services.AddSingleton<IPosService, PosService>();
         services.AddSingleton<IBonLivraisonWorkflowService, BonLivraisonWorkflowService>();
         services.AddSingleton<IBonReceptionWorkflowService, BonReceptionWorkflowService>();

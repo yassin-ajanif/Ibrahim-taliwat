@@ -6,7 +6,8 @@ public class DevisLigne : BaseEntity
 {
     public int DevisId { get; set; }
     public Devis? Devis { get; set; }
-    public int ProduitId { get; set; }
+    public int? ProduitId { get; set; }
+    public int? ServiceId { get; set; }
     public string Designation { get; set; } = string.Empty;
     public decimal Quantite { get; set; }
     public decimal PrixUnitaireHT { get; set; }

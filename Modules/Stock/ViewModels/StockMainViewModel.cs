@@ -264,8 +264,8 @@ public partial class StockMainViewModel : BaseViewModel
         var brPriceMap = brIds.Count == 0
             ? new Dictionary<(int, int), decimal>()
             : (await db.BonReceptionLignes.AsNoTracking()
-                .Where(l => brIds.Contains(l.BRId))
-                .Select(l => new { l.BRId, l.ProduitId, l.PrixUnitaireHT })
+                .Where(l => brIds.Contains(l.BRId) && l.ProduitId != null)
+                .Select(l => new { l.BRId, ProduitId = l.ProduitId!.Value, l.PrixUnitaireHT })
                 .ToListAsync(cancellationToken))
                 .GroupBy(l => (l.BRId, l.ProduitId))
                 .ToDictionary(g => g.Key, g => g.Last().PrixUnitaireHT);
@@ -273,8 +273,8 @@ public partial class StockMainViewModel : BaseViewModel
         var avoirPriceMap = avoirIds.Count == 0
             ? new Dictionary<(int, int), decimal>()
             : (await db.AvoirLignes.AsNoTracking()
-                .Where(l => avoirIds.Contains(l.AvoirId))
-                .Select(l => new { l.AvoirId, l.ProduitId, l.PrixUnitaireHT })
+                .Where(l => avoirIds.Contains(l.AvoirId) && l.ProduitId != null)
+                .Select(l => new { l.AvoirId, ProduitId = l.ProduitId!.Value, l.PrixUnitaireHT })
                 .ToListAsync(cancellationToken))
                 .GroupBy(l => (l.AvoirId, l.ProduitId))
                 .ToDictionary(g => g.Key, g => g.Last().PrixUnitaireHT);
@@ -282,8 +282,8 @@ public partial class StockMainViewModel : BaseViewModel
         var avoirFournisseurPriceMap = avoirFournisseurIds.Count == 0
             ? new Dictionary<(int, int), decimal>()
             : (await db.AvoirFournisseurLignes.AsNoTracking()
-                .Where(l => avoirFournisseurIds.Contains(l.AvoirFournisseurId))
-                .Select(l => new { l.AvoirFournisseurId, l.ProduitId, l.PrixUnitaireHT })
+                .Where(l => avoirFournisseurIds.Contains(l.AvoirFournisseurId) && l.ProduitId != null)
+                .Select(l => new { l.AvoirFournisseurId, ProduitId = l.ProduitId!.Value, l.PrixUnitaireHT })
                 .ToListAsync(cancellationToken))
                 .GroupBy(l => (l.AvoirFournisseurId, l.ProduitId))
                 .ToDictionary(g => g.Key, g => g.Last().PrixUnitaireHT);

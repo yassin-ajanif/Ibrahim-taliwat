@@ -5,8 +5,6 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestionCommerciale.Modules.Auth.Services;
-using GestionCommerciale.Modules.Stock;
-using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Facturation.Services;
 using GestionCommerciale.Modules.Tiers.Models;
@@ -38,6 +36,7 @@ public partial class FactureEditViewModel : BaseViewModel
     private readonly IPdfPrintService _pdfPrint;
     private readonly IFactureBlLinkService _blLinkService;
     private readonly IFactureBccLinkService _bccLinkService;
+    private readonly AddLineCatalogSearchCoordinator _addLineSearch;
 
     public FactureEditViewModel(
         IDbContextFactory<AppDbContext> dbFactory,
@@ -53,7 +52,8 @@ public partial class FactureEditViewModel : BaseViewModel
         ILocaleService locale,
         IUiPreferencesService uiPreferences,
         IPdfService pdf,
-        IPdfPrintService pdfPrint)
+        IPdfPrintService pdfPrint,
+        ICatalogSearchService catalogSearch)
     {
         _dbFactory = dbFactory;
         _numbers = numbers;
@@ -69,6 +69,7 @@ public partial class FactureEditViewModel : BaseViewModel
         _pdfPrint = pdfPrint;
         _blLinkService = blLinkService;
         _bccLinkService = bccLinkService;
+        _addLineSearch = new AddLineCatalogSearchCoordinator(catalogSearch);
         _locale.CultureApplied += (_, _) =>
         {
             RefreshFactureUi();
@@ -81,8 +82,6 @@ public partial class FactureEditViewModel : BaseViewModel
     }
 
     public ObservableCollection<GestionCommerciale.Modules.Tiers.Models.Tiers> Clients { get; } = [];
-    public ObservableCollection<GestionCommerciale.Modules.Stock.Models.Produit> Produits { get; } = [];
-    public ObservableCollection<Service> Services { get; } = [];
     public ObservableCollection<FactureLineRow> Lignes { get; } = [];
     public ObservableCollection<FacturePaiementRowViewModel> Paiements { get; } = [];
     public ObservableCollection<LinkedBlRow> LinkedBls { get; } = [];
@@ -125,7 +124,8 @@ public partial class FactureEditViewModel : BaseViewModel
     [ObservableProperty] private string _lblDateFacture = string.Empty;
     [ObservableProperty] private string _lblDateEcheance = string.Empty;
     [ObservableProperty] private string _btnRemoveLine = string.Empty;
-    [ObservableProperty] private string _lblCatalogHintFacture = string.Empty;
+    [ObservableProperty] private string _lblAddProduct = string.Empty;
+    [ObservableProperty] private string _wmAddProduct = string.Empty;
     [ObservableProperty] private string _lblTotals = string.Empty;
     [ObservableProperty] private string _devise = string.Empty;
     [ObservableProperty] private string _totalHtLabel = string.Empty;
@@ -165,7 +165,8 @@ public partial class FactureEditViewModel : BaseViewModel
     public bool ShowTotalTtc => LineGridColumns.ShowMontantTtc && LineGridColumns.ShowTva;
     public bool HighlightHtTotal => !ShowTotalTtc;
 
-    public AutoCompleteFilterPredicate<object?> ProduitAutocompleteFilter => ProductAutoComplete.ItemFilter;
+    public ObservableCollection<DocumentCatalogItem> AddLineSearchResults => _addLineSearch.Results;
+
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
 
     private bool _suppressAddLinePick;
@@ -194,7 +195,8 @@ public partial class FactureEditViewModel : BaseViewModel
         LblDateFacture = _locale.T("Lbl_DateFacture");
         LblDateEcheance = _locale.T("Lbl_DateEcheance");
         BtnRemoveLine = _locale.T("Btn_RemoveLine");
-        LblCatalogHintFacture = _locale.T("Lbl_CatalogHintFacture");
+        LblAddProduct = _locale.T("Devis_LblAddProduct");
+        WmAddProduct = _locale.T("Wm_SearchCatalog");
         LblTotals = _locale.T("Lbl_Totals");
         LblPaymentsRecorded = _locale.T("Lbl_PaymentsRecorded");
         LblMontant = _locale.T("Lbl_Montant");
@@ -358,16 +360,21 @@ public partial class FactureEditViewModel : BaseViewModel
     private void LineChanged(object? sender, PropertyChangedEventArgs e)
     {
         RefreshTotals();
-        if (e.PropertyName == nameof(FactureLineRow.ProduitId) && sender is FactureLineRow changed && changed.ProduitId is > 0)
-            ConsolidateDuplicateProductLines();
+        if (e.PropertyName is nameof(FactureLineRow.ProduitId) or nameof(FactureLineRow.ServiceId)
+            && sender is FactureLineRow changed && (changed.ProduitId is > 0 || changed.ServiceId is > 0))
+            ConsolidateDuplicateCatalogLines();
     }
+
+    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
 
     partial void OnAddLineCatalogPickChanged(object? value)
     {
         if (_suppressAddLinePick) return;
-        if (value is not GestionCommerciale.Modules.Stock.Models.Produit p) return;
+        if (value is not DocumentCatalogItem item) return;
         _suppressAddLinePick = true;
-        var existing = Lignes.FirstOrDefault(l => l.ProduitId == p.Id && p.Id != 0);
+        var existing = item.Kind == DocumentCatalogKind.Service
+            ? Lignes.FirstOrDefault(l => l.ServiceId == item.Id && item.Id != 0)
+            : Lignes.FirstOrDefault(l => l.ProduitId == item.Id && item.Id != 0);
         if (existing != null)
         {
             existing.Quantite += 1;
@@ -376,35 +383,58 @@ public partial class FactureEditViewModel : BaseViewModel
         else
         {
             var row = new FactureLineRow();
-            row.ApplyCatalogProduct(p);
+            row.ApplyCatalogItem(item);
             row.Quantite = 1;
             row.PropertyChanged += LineChanged;
             Lignes.Add(row);
             SelectedLine = row;
         }
+
         AddLineCatalogPick = null;
         AddLineSearchText = string.Empty;
         _suppressAddLinePick = false;
+        _addLineSearch.Clear();
         RefreshTotals();
     }
 
-    private void ConsolidateDuplicateProductLines()
+    private void ConsolidateDuplicateCatalogLines()
     {
         foreach (var g in Lignes.Where(l => l.ProduitId is > 0).GroupBy(l => l.ProduitId).ToList())
         {
             if (g.Count() < 2) continue;
-            var ordered = g.OrderBy(l => Lignes.IndexOf(l)).ToList();
-            var keep = ordered[0];
-            var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
-            foreach (var line in ordered.Skip(1))
-            {
-                if (ReferenceEquals(SelectedLine, line))
-                    SelectedLine = keep;
-                line.PropertyChanged -= LineChanged;
-                Lignes.Remove(line);
-            }
-            keep.Quantite += extraQty;
+            MergeDuplicateGroup(g);
         }
+
+        foreach (var g in Lignes.Where(l => l.ServiceId is > 0).GroupBy(l => l.ServiceId).ToList())
+        {
+            if (g.Count() < 2) continue;
+            MergeDuplicateGroup(g);
+        }
+    }
+
+    private void MergeDuplicateGroup(IEnumerable<FactureLineRow> group)
+    {
+        var ordered = group.OrderBy(l => Lignes.IndexOf(l)).ToList();
+        var keep = ordered[0];
+        var extraQty = ordered.Skip(1).Sum(l => l.Quantite);
+        foreach (var line in ordered.Skip(1))
+        {
+            if (ReferenceEquals(SelectedLine, line))
+                SelectedLine = keep;
+            line.PropertyChanged -= LineChanged;
+            Lignes.Remove(line);
+        }
+
+        keep.Quantite += extraQty;
+    }
+
+    private void ResetAddProductSearch()
+    {
+        _suppressAddLinePick = true;
+        AddLineCatalogPick = null;
+        AddLineSearchText = string.Empty;
+        _suppressAddLinePick = false;
+        _addLineSearch.Clear();
     }
 
     private void RefreshTotals()
@@ -479,8 +509,9 @@ public partial class FactureEditViewModel : BaseViewModel
         LinkedBls.Clear();
         BonCommandeReference = string.Empty;
         Lignes.Clear();
+        ResetAddProductSearch();
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-        await LoadLookupsAsync(db, cancellationToken);
+        await LoadClientsAsync(db, cancellationToken);
 
         if (id == null)
         {
@@ -494,6 +525,7 @@ public partial class FactureEditViewModel : BaseViewModel
             MontantPaye = 0;
             Paiements.Clear();
             RefreshTotals();
+            ResetAddProductSearch();
             return;
         }
 
@@ -525,16 +557,13 @@ public partial class FactureEditViewModel : BaseViewModel
         Note = f.Note;
         foreach (var l in f.Lignes)
         {
-            var prod = l.ProduitId is int pid ? Produits.FirstOrDefault(p => p.Id == pid) : null;
-            var svc = l.ServiceId is int sid ? Services.FirstOrDefault(s => s.Id == sid) : null;
             var row = new FactureLineRow
             {
                 BonLivraisonId = l.BonLivraisonId,
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
-                Reference = prod?.Reference ?? svc?.Reference ?? string.Empty,
                 Designation = l.Designation,
-                Conditionnement = string.IsNullOrWhiteSpace(l.Conditionnement) ? svc?.Unite ?? string.Empty : l.Conditionnement,
+                Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
                 PrixUnitaireHt = l.PrixUnitaireHT,
                 Remise = l.Remise,
@@ -552,25 +581,16 @@ public partial class FactureEditViewModel : BaseViewModel
         CanEditDraft = true;
         Title = _locale.Tf("Fact_TitleNum", Numero);
         RefreshTotals();
+        ResetAddProductSearch();
     }
 
-    private async Task LoadLookupsAsync(AppDbContext db, CancellationToken cancellationToken)
+    private async Task LoadClientsAsync(AppDbContext db, CancellationToken cancellationToken)
     {
         var clients = await db.Tiers.AsNoTracking()
             .Where(t => t.Actif && (t.Type == TypeTiers.Client || t.Type == TypeTiers.LesDeux))
             .OrderBy(t => t.Nom).ToListAsync(cancellationToken);
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
-
-        var produits = await db.Produits.AsNoTracking().Where(p => p.Actif)
-            .SelectForListWithoutImageData().ToListAsync(cancellationToken);
-        Produits.Clear();
-        foreach (var p in produits) Produits.Add(p);
-
-        var services = await db.Services.AsNoTracking().Where(s => s.Actif)
-            .OrderBy(s => s.Designation).ThenBy(s => s.Reference).ToListAsync(cancellationToken);
-        Services.Clear();
-        foreach (var s in services) Services.Add(s);
     }
 
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
@@ -671,10 +691,6 @@ public partial class FactureEditViewModel : BaseViewModel
         var lines = await _blLinkService.LoadBlLinesAsync(blId, cancellationToken);
         foreach (var l in lines)
         {
-            if (l.ServiceId is int sid)
-                l.Reference = Services.FirstOrDefault(s => s.Id == sid)?.Reference ?? l.Reference;
-            else if (l.ProduitId is int pid)
-                l.Reference = Produits.FirstOrDefault(p => p.Id == pid)?.Reference ?? l.Reference;
             l.PropertyChanged += LineChanged;
             Lignes.Add(l);
         }
@@ -691,6 +707,7 @@ public partial class FactureEditViewModel : BaseViewModel
         LinkedBls.Clear();
         BonCommandeReference = string.Empty;
         Lignes.Clear();
+        ResetAddProductSearch();
         DevisId = null;
         FactureId = null;
         Date = new DateTimeOffset(DateTime.Today);
@@ -698,7 +715,7 @@ public partial class FactureEditViewModel : BaseViewModel
         EstPayee = false;
         Numero = _locale.T("Fact_NewNumPlaceholder");
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-        await LoadLookupsAsync(db, cancellationToken);
+        await LoadClientsAsync(db, cancellationToken);
 
         var firstBlId = blIds[0];
         var firstBl = await db.BonsLivraison.AsNoTracking().FirstAsync(b => b.Id == firstBlId, cancellationToken);
@@ -711,10 +728,6 @@ public partial class FactureEditViewModel : BaseViewModel
             var lines = await _blLinkService.LoadBlLinesAsync(blId, cancellationToken);
             foreach (var l in lines)
             {
-                if (l.ServiceId is int sid)
-                    l.Reference = Services.FirstOrDefault(s => s.Id == sid)?.Reference ?? l.Reference;
-                else if (l.ProduitId is int pid)
-                    l.Reference = Produits.FirstOrDefault(p => p.Id == pid)?.Reference ?? l.Reference;
                 l.PropertyChanged += LineChanged;
                 Lignes.Add(l);
             }
@@ -744,15 +757,15 @@ public partial class FactureEditViewModel : BaseViewModel
         EstPayee = false;
         Numero = _locale.T("Fact_NewNumPlaceholder");
         RemiseGlobale = d.RemiseGlobale;
-        await LoadLookupsAsync(db, cancellationToken);
+        await LoadClientsAsync(db, cancellationToken);
         Lignes.Clear();
+        ResetAddProductSearch();
         foreach (var l in d.Lignes)
         {
-            var prod = Produits.FirstOrDefault(p => p.Id == l.ProduitId);
             Lignes.Add(new FactureLineRow
             {
                 ProduitId = l.ProduitId,
-                Reference = prod?.Reference ?? string.Empty,
+                ServiceId = l.ServiceId,
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
@@ -771,26 +784,6 @@ public partial class FactureEditViewModel : BaseViewModel
     }
 
     public void LoadFromDevis(int devisId) => _ = LoadFromDevisAsync(devisId, CancellationToken.None);
-
-    [RelayCommand]
-    private void AddLine()
-    {
-        var p = Produits.FirstOrDefault();
-        var row = new FactureLineRow
-        {
-            ProduitId = p?.Id,
-            Reference = p?.Reference ?? string.Empty,
-            Designation = p?.Designation ?? string.Empty,
-            Conditionnement = p?.Unite ?? string.Empty,
-            Quantite = 1,
-            PrixUnitaireHt = p?.PrixVenteHT ?? 0,
-            Remise = 0,
-            TauxTva = p?.TauxTVA ?? 20
-        };
-        row.PropertyChanged += LineChanged;
-        Lignes.Add(row);
-        RefreshTotals();
-    }
 
     [RelayCommand]
     private void RemoveLine(FactureLineRow? row)
