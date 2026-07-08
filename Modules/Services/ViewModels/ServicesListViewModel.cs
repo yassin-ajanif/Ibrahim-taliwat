@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GestionCommerciale.Modules.Services;
 using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Helpers;
@@ -37,6 +38,11 @@ public partial class ServicesListViewModel : BaseViewModel
         _locale.CultureApplied += (_, _) => RefreshUi();
         RefreshUi();
         Pagination = new PaginationHelper(() => _ = LoadPageAsync(CancellationToken.None));
+
+        Details = _sp.GetRequiredService<ServiceEditViewModel>();
+        Details.ShowBackButton = false;
+        Details.EmbeddedRefreshAction = () => _ = LoadPageAsync(CancellationToken.None, false);
+        Details.Load(null);
     }
 
     public ObservableCollection<ServicesListRow> Rows { get; } = [];
@@ -51,6 +57,8 @@ public partial class ServicesListViewModel : BaseViewModel
     [ObservableProperty] private string _colActif = string.Empty;
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private ServicesListRow? _selected;
+
+    public ServiceEditViewModel Details { get; }
 
     private void RefreshUi()
     {
@@ -90,7 +98,8 @@ public partial class ServicesListViewModel : BaseViewModel
             }
 
             var total = await q.CountAsync(ct);
-            var items = await q.OrderBy(s => s.Designation)
+            var items = await q.SelectForListWithoutImageData()
+                .OrderBy(s => s.Designation)
                 .ThenBy(s => s.Reference)
                 .Skip(Pagination.Skip)
                 .Take(Pagination.PageSize)
@@ -117,18 +126,20 @@ public partial class ServicesListViewModel : BaseViewModel
     [RelayCommand]
     private void New()
     {
-        var vm = _sp.GetRequiredService<ServiceEditViewModel>();
-        vm.Load(null);
-        _workspace.Open(vm);
+        Selected = null;
+        Details.Load(null);
     }
 
     [RelayCommand]
     private void OpenSelected()
     {
         if (Selected == null) return;
-        var vm = _sp.GetRequiredService<ServiceEditViewModel>();
-        vm.Load(Selected.Service.Id);
-        _workspace.Open(vm);
+        Details.Load(Selected.Service.Id);
+    }
+
+    partial void OnSelectedChanged(ServicesListRow? value)
+    {
+        Details.Load(value?.Service.Id);
     }
 
     [RelayCommand]

@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GestionCommerciale.Modules.Stock.Services;
 using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Services;
 using GestionCommerciale.Shared.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Media.Imaging;
+using System.IO;
 
 namespace GestionCommerciale.Modules.Services.ViewModels;
 
@@ -16,6 +19,11 @@ public partial class ServiceEditViewModel : BaseViewModel
     private readonly WorkspaceNavigator _workspace;
     private readonly IServiceProvider _sp;
     private readonly ILocaleService _locale;
+    private const long MaxImageFileBytes = 25 * 1024 * 1024;
+    private byte[]? _pendingImageReplacement;
+    private bool _clearImageOnSave;
+
+    private Bitmap? _ficheImagePreview;
 
     public ServiceEditViewModel(
         IDbContextFactory<AppDbContext> dbFactory,
@@ -45,16 +53,41 @@ public partial class ServiceEditViewModel : BaseViewModel
 
     [ObservableProperty] private string _btnBack = string.Empty;
     [ObservableProperty] private string _btnSave = string.Empty;
+    [ObservableProperty] private bool _showBackButton = true;
+    [ObservableProperty] private string _lblPhoto = string.Empty;
+    [ObservableProperty] private string _btnChooseImage = string.Empty;
+    [ObservableProperty] private string _btnRemovePhoto = string.Empty;
     [ObservableProperty] private string _lblReference = string.Empty;
     [ObservableProperty] private string _lblDesignation = string.Empty;
     [ObservableProperty] private string _lblUnite = string.Empty;
     [ObservableProperty] private string _lblPrixVente = string.Empty;
     [ObservableProperty] private string _lblCout = string.Empty;
     [ObservableProperty] private string _lblTva = string.Empty;
+    [ObservableProperty] private bool _canRemoveFicheImage;
     [ObservableProperty] private string _chkActif = string.Empty;
     [ObservableProperty] private string _lblNote = string.Empty;
     [ObservableProperty] private string _wmRefExample = string.Empty;
     [ObservableProperty] private string _wmLibelle = string.Empty;
+
+    // Used when this view-model is embedded on the services list page.
+    // In embedded mode, we refresh the list instead of navigating away.
+    public Action? EmbeddedRefreshAction { get; set; }
+
+    public bool FicheEditable => true;
+
+    public Bitmap? FicheImagePreview
+    {
+        get => _ficheImagePreview;
+        private set
+        {
+            if (!ReferenceEquals(_ficheImagePreview, value))
+            {
+                _ficheImagePreview?.Dispose();
+                _ficheImagePreview = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     private void RefreshUi()
     {
@@ -67,6 +100,9 @@ public partial class ServiceEditViewModel : BaseViewModel
         LblCout = _locale.T("Service_LblCoutHt");
         LblTva = _locale.T("Lbl_TvaPctField");
         ChkActif = _locale.T("Lbl_ProductActive");
+        LblPhoto = _locale.T("Lbl_ProductPhoto");
+        BtnChooseImage = _locale.T("Btn_ChooseImageDots");
+        BtnRemovePhoto = _locale.T("Btn_RemovePhoto");
         LblNote = _locale.T("Lbl_Note");
         WmRefExample = _locale.T("Service_WmRefExample");
         WmLibelle = _locale.T("Wm_Libelle");
@@ -87,6 +123,11 @@ public partial class ServiceEditViewModel : BaseViewModel
     private async Task LoadAsync(int? id, CancellationToken ct)
     {
         ServiceId = id;
+        _pendingImageReplacement = null;
+        _clearImageOnSave = false;
+        FicheImagePreview = null;
+        CanRemoveFicheImage = false;
+
         if (id == null)
         {
             Reference = string.Empty;
@@ -111,12 +152,19 @@ public partial class ServiceEditViewModel : BaseViewModel
         TauxTva = s.TauxTVA;
         Actif = s.Actif;
         Note = s.Note;
+        SetFicheImagePreviewFromBytes(s.ImageData);
         UpdateTitle();
     }
 
     [RelayCommand]
     private void Back()
     {
+        if (!ShowBackButton)
+        {
+            EmbeddedRefreshAction?.Invoke();
+            return;
+        }
+
         var vm = _sp.GetRequiredService<ServicesListViewModel>();
         _workspace.Open(vm);
         vm.LoadCommand.Execute(null);
@@ -165,8 +213,20 @@ public partial class ServiceEditViewModel : BaseViewModel
             entity.Actif = Actif;
             entity.Note = Note.Trim();
 
+            // Image update logic:
+            // - if user cleared photo => store null
+            // - if user picked new photo => store bytes
+            // - otherwise => keep existing bytes (update case)
+            if (_clearImageOnSave)
+                entity.ImageData = null;
+            else if (_pendingImageReplacement != null)
+                entity.ImageData = _pendingImageReplacement;
+
             await db.SaveChangesAsync(cancellationToken);
             ServiceId = entity.Id;
+            _pendingImageReplacement = null;
+            _clearImageOnSave = false;
+            SetFicheImagePreviewFromBytes(entity.ImageData);
             await _dialog.ShowInfoAsync(_locale.T("Service_Title"), _locale.T("Service_Saved"), cancellationToken);
             Back();
         }
@@ -174,5 +234,88 @@ public partial class ServiceEditViewModel : BaseViewModel
         {
             IsBusy = false;
         }
+    }
+
+    private void SetFicheImagePreviewFromBytes(byte[]? bytes)
+    {
+        FicheImagePreview = null;
+        CanRemoveFicheImage = false;
+
+        if (bytes == null || bytes.Length == 0)
+            return;
+
+        try
+        {
+            using var ms = new MemoryStream(bytes);
+            FicheImagePreview = new Bitmap(ms);
+            CanRemoveFicheImage = true;
+        }
+        catch
+        {
+            // ignore broken image; keep preview empty
+            FicheImagePreview = null;
+            CanRemoveFicheImage = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PickImageAsync(CancellationToken cancellationToken)
+    {
+        if (!FicheEditable)
+            return;
+
+        var path = await _dialog.PickOpenFileAsync(
+            _locale.T("Prod_PickImage"),
+            ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"],
+            cancellationToken);
+        if (path == null)
+            return;
+
+        try
+        {
+            var info = new FileInfo(path);
+            if (info.Length > MaxImageFileBytes)
+            {
+                await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Prod_ErrFileSize"), cancellationToken);
+                return;
+            }
+        }
+        catch
+        {
+            // continue; compressor may fail if unreadable
+        }
+
+        byte[] jpeg;
+        try
+        {
+            jpeg = await Task.Run(() => ProductImageCompressor.CompressFileToJpeg(path), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Prod_ErrImagePrefix") + ex.Message, cancellationToken);
+            return;
+        }
+
+        if (jpeg.Length == 0)
+        {
+            await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Prod_ErrImageEmpty"), cancellationToken);
+            return;
+        }
+
+        _pendingImageReplacement = jpeg;
+        _clearImageOnSave = false;
+        SetFicheImagePreviewFromBytes(jpeg);
+    }
+
+    [RelayCommand]
+    private void ClearFicheImage()
+    {
+        if (!FicheEditable)
+            return;
+
+        _pendingImageReplacement = null;
+        _clearImageOnSave = true;
+        FicheImagePreview = null;
+        CanRemoveFicheImage = false;
     }
 }

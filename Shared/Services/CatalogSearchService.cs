@@ -45,6 +45,7 @@ public sealed class CatalogSearchService : ICatalogSearchService
             .Where(s => s.Actif)
             .WhereSearchMatches(query)
             .OrderBy(s => s.Reference)
+            .SelectForListWithoutImageData()
             .Take(limit)
             .ToListAsync(cancellationToken);
     }

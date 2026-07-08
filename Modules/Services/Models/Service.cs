@@ -12,4 +12,7 @@ public class Service : BaseEntity
     public decimal TauxTVA { get; set; }
     public bool Actif { get; set; } = true;
     public string Note { get; set; } = string.Empty;
+    
+    /// <summary>Compressed service photo (JPEG), optional.</summary>
+    public byte[]? ImageData { get; set; }
 }
