@@ -383,7 +383,9 @@ public partial class AvoirEditViewModel : BaseViewModel
     private async Task LoadClientsAsync(CancellationToken ct)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var clients = await db.Tiers.AsNoTracking().Where(t => t.Actif).OrderBy(t => t.Nom).ToListAsync(ct);
+        var clients = await db.Tiers.AsNoTracking()
+            .Where(t => t.Actif && (t.Type == TypeTiers.Client || t.Type == TypeTiers.LesDeux))
+            .OrderBy(t => t.Nom).ToListAsync(ct);
         Clients.Clear();
         foreach (var c in clients) Clients.Add(c);
     }
