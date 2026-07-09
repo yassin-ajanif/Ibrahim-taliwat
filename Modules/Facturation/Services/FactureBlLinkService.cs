@@ -1,7 +1,7 @@
-using GestionCommerciale.Modules.Services.Models;
 using GestionCommerciale.Modules.Facturation.ViewModels;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Shared.Database;
+using GestionCommerciale.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestionCommerciale.Modules.Facturation.Services;
@@ -64,36 +64,23 @@ public sealed class FactureBlLinkService : IFactureBlLinkService
             .Where(l => l.BLId == blId)
             .ToListAsync(cancellationToken);
 
-        var serviceIds = lines.Where(l => l.ServiceId.HasValue).Select(l => l.ServiceId!.Value).Distinct().ToList();
-        var services = serviceIds.Count == 0
-            ? new Dictionary<int, Service>()
-            : await db.Services.AsNoTracking()
-                .Where(s => serviceIds.Contains(s.Id))
-                .ToDictionaryAsync(s => s.Id, cancellationToken);
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            lines.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
 
-        return lines.Select(l =>
+        return lines.Select(l => new FactureLineRow
         {
-            var row = new FactureLineRow
-            {
-                BonLivraisonId = blId,
-                ProduitId = l.ProduitId,
-                ServiceId = l.ServiceId,
-                Designation = l.Designation,
-                Quantite = l.QuantiteLivree,
-                PrixUnitaireHt = l.PrixUnitaireHT,
-                Remise = l.Remise,
-                TauxTva = l.TauxTVA
-            };
-            if (l.ServiceId is int sid && services.TryGetValue(sid, out var svc))
-            {
-                row.Reference = svc.Reference;
-                row.Conditionnement = svc.Unite;
-            }
-            else
-            {
-                row.Conditionnement = string.Empty;
-            }
-            return row;
+            BonLivraisonId = blId,
+            ProduitId = l.ProduitId,
+            ServiceId = l.ServiceId,
+            Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
+            Designation = l.Designation,
+            Quantite = l.QuantiteLivree,
+            PrixUnitaireHt = l.PrixUnitaireHT,
+            Remise = l.Remise,
+            TauxTva = l.TauxTVA,
+            Conditionnement = string.Empty
         }).ToList();
     }
 

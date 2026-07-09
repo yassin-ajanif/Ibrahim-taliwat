@@ -449,12 +449,17 @@ public partial class AvoirEditViewModel : BaseViewModel
         var f = await db.Factures.Include(x => x.Lignes).FirstAsync(x => x.Id == factureId, cancellationToken);
         ClientId = f.ClientId;
         Numero = _locale.T("Avoir_DraftPlaceholder");
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            f.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in f.Lignes)
         {
             Lignes.Add(new AvoirLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = Math.Min(l.Quantite, 1),
@@ -491,12 +496,17 @@ public partial class AvoirEditViewModel : BaseViewModel
         RetourMarchandise = avoir.RetourMarchandise;
         Lignes.Clear();
         ResetAddProductSearch();
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            avoir.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in avoir.Lignes)
         {
             Lignes.Add(new AvoirLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,

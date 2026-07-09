@@ -391,12 +391,17 @@ public partial class BREditViewModel : BaseViewModel
         FournisseurId = b.FournisseurId;
         Date = new DateTimeOffset(b.Date);
         Note = b.Note;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            b.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in b.Lignes)
         {
             Lignes.Add(new BRLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 QuantiteRecue = l.QuantiteRecue,
                 PrixUnitaireHt = l.PrixUnitaireHT,
@@ -433,12 +438,17 @@ public partial class BREditViewModel : BaseViewModel
         Date = new DateTimeOffset(DateTime.Today);
         Note = string.Empty;
         Numero = "(brouillon)";
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            bc.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in bc.Lignes.OrderBy(x => x.Id))
         {
             Lignes.Add(new BRLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 QuantiteRecue = l.QuantiteCommandee,

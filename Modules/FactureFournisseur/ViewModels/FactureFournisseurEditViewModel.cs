@@ -526,6 +526,10 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         EstPayee = f.EstPayee;
         RemiseGlobale = f.RemiseGlobale;
         Note = f.Note;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            f.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in f.Lignes)
         {
             var row = new FactureFournisseurLineRow
@@ -533,6 +537,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
                 BonReceptionId = l.BonReceptionId,
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,

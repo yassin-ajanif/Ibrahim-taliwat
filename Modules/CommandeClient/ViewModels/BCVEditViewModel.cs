@@ -340,12 +340,17 @@ public partial class BCVEditViewModel : BaseViewModel
         ClientId = b.ClientId;
         Date = new DateTimeOffset(b.Date);
         Note = b.Note;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            b.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in b.Lignes)
         {
             Lignes.Add(new BCVLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 QuantiteCommandee = l.QuantiteCommandee,

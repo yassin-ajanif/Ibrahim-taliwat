@@ -1,6 +1,7 @@
 using GestionCommerciale.Modules.FactureFournisseur.ViewModels;
 using GestionCommerciale.Modules.Reception.Models;
 using GestionCommerciale.Shared.Database;
+using GestionCommerciale.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestionCommerciale.Modules.FactureFournisseur.Services;
@@ -61,11 +62,17 @@ public sealed class FactureFournisseurBrLinkService : IFactureFournisseurBrLinkS
             .Where(l => l.BRId == brId)
             .ToListAsync(cancellationToken);
 
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            lines.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
+
         return lines.Select(l => new FactureFournisseurLineRow
         {
             BonReceptionId = brId,
             ProduitId = l.ProduitId,
             ServiceId = l.ServiceId,
+            Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
             Designation = l.Designation,
             Conditionnement = string.Empty,
             Quantite = l.QuantiteRecue,

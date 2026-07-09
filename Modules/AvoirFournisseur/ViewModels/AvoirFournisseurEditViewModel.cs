@@ -361,12 +361,17 @@ public partial class AvoirFournisseurEditViewModel : BaseViewModel
         Motif = doc.Motif;
         RetourMarchandise = doc.RetourMarchandise;
         Lignes.Clear();
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            doc.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in doc.Lignes)
         {
             var row = new AvoirFournisseurLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,

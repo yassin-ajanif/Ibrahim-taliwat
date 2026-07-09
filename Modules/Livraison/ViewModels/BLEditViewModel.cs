@@ -416,12 +416,17 @@ public partial class BLEditViewModel : BaseViewModel
         ClientId = b.ClientId;
         Date = new DateTimeOffset(b.Date);
         Note = userNote;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            b.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in b.Lignes)
         {
             var row = new BLLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 QuantiteCommandee = l.QuantiteCommandee,
                 QuantiteLivree = l.QuantiteLivree,
@@ -463,12 +468,17 @@ public partial class BLEditViewModel : BaseViewModel
         Date = new DateTimeOffset(DateTime.Today);
         Note = string.Empty;
         Numero = "(brouillon)";
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            bcc.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in bcc.Lignes.OrderBy(x => x.Id))
         {
             var row = new BLLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 QuantiteCommandee = l.QuantiteCommandee,
@@ -507,12 +517,17 @@ public partial class BLEditViewModel : BaseViewModel
         Numero = "(brouillon)";
         Lignes.Clear();
         ResetAddProductSearch();
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            d.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in d.Lignes)
         {
             var row = new BLLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 QuantiteCommandee = l.Quantite,

@@ -390,12 +390,17 @@ public partial class DevisEditViewModel : BaseViewModel
         DateValidite = new DateTimeOffset(d.DateValidite);
         RemiseGlobale = d.RemiseGlobale;
         Note = d.Note;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            d.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in d.Lignes)
         {
             var row = new DevisLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,

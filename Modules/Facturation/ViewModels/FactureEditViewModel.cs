@@ -558,6 +558,10 @@ public partial class FactureEditViewModel : BaseViewModel
         EstPayee = f.EstPayee;
         RemiseGlobale = f.RemiseGlobale;
         Note = f.Note;
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            f.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in f.Lignes)
         {
             var row = new FactureLineRow
@@ -565,6 +569,7 @@ public partial class FactureEditViewModel : BaseViewModel
                 BonLivraisonId = l.BonLivraisonId,
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
@@ -763,12 +768,17 @@ public partial class FactureEditViewModel : BaseViewModel
         await LoadClientsAsync(db, cancellationToken);
         Lignes.Clear();
         ResetAddProductSearch();
+        var catalogRefs = await DocumentLineCatalogLookups.LoadAsync(
+            db,
+            d.Lignes.Select(l => (l.ProduitId, l.ServiceId)),
+            cancellationToken);
         foreach (var l in d.Lignes)
         {
             Lignes.Add(new FactureLineRow
             {
                 ProduitId = l.ProduitId,
                 ServiceId = l.ServiceId,
+                Reference = catalogRefs.GetReference(l.ProduitId, l.ServiceId),
                 Designation = l.Designation,
                 Conditionnement = l.Conditionnement,
                 Quantite = l.Quantite,
