@@ -281,6 +281,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de la facture", ex, "FactureEditViewModel.RemoveFactureAsync");
             await _dialog.ShowErrorAsync(_locale.T("Fact_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -320,6 +321,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la mise à jour du paiement", ex, "FactureEditViewModel.CommitPaiementRowAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -343,6 +345,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du paiement", ex, "FactureEditViewModel.DeletePaiementRowAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -981,6 +984,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'ajout du paiement", ex, "FactureEditViewModel.AddPaiementAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -1012,6 +1016,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de la facture", ex, "FactureEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -1033,6 +1038,7 @@ public partial class FactureEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression de la facture", ex, "FactureEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally

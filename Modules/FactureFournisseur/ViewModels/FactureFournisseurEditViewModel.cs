@@ -263,6 +263,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de la facture fournisseur", ex, "FactureFournisseurEditViewModel.RemoveFactureFournisseurAsync");
             await _dialog.ShowErrorAsync(_locale.T("Faf_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -302,6 +303,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la mise à jour du paiement", ex, "FactureFournisseurEditViewModel.CommitPaiementRowAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -325,6 +327,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du paiement", ex, "FactureFournisseurEditViewModel.DeletePaiementRowAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -849,6 +852,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'ajout du paiement", ex, "FactureFournisseurEditViewModel.AddPaiementAsync");
             await _dialog.ShowErrorAsync(_locale.T("Pay_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -880,6 +884,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de la facture fournisseur", ex, "FactureFournisseurEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -901,6 +906,7 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression de la facture fournisseur", ex, "FactureFournisseurEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally

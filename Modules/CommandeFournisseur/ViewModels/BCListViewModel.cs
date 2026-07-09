@@ -200,6 +200,7 @@ public partial class BCListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du bon de commande fournisseur", ex, "BCListViewModel.DeleteBcAsync");
             await _dialog.ShowErrorAsync(_locale.T("BC_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -224,6 +225,7 @@ public partial class BCListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du bon de commande fournisseur", ex, "BCListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }

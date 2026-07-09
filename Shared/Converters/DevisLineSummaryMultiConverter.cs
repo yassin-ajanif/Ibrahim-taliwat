@@ -24,8 +24,9 @@ public sealed class DevisLineSummaryMultiConverter : IMultiValueConverter
             var tva = System.Convert.ToDecimal(values[3]);
             return string.Format(culture, fmt, q, pu, rem, tva);
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec du formatage du résumé de ligne devis", ex, "DevisLineSummaryMultiConverter.Convert");
             return string.Empty;
         }
     }

@@ -239,8 +239,9 @@ public partial class SettingsViewModel : BaseViewModel
             var arr = JsonSerializer.Deserialize<List<decimal>>(row.TauxTVAJson);
             TauxTvaText = arr == null ? "20" : string.Join(",", arr.Select(x => x.ToString(CultureInfo.InvariantCulture)));
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de la désérialisation des taux TVA", ex, "SettingsViewModel.LoadAsync");
             TauxTvaText = "20";
         }
 
@@ -271,8 +272,9 @@ public partial class SettingsViewModel : BaseViewModel
                 .Select(s => decimal.Parse(s, CultureInfo.InvariantCulture)).ToList();
             if (taux.Count == 0) taux = [20];
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de l'analyse des taux TVA", ex, "SettingsViewModel.SaveAsync");
             await _dialog.ShowErrorAsync(_locale.T("Settings_Title"), _locale.T("Settings_ErrTva"), cancellationToken);
             return;
         }
@@ -349,6 +351,7 @@ public partial class SettingsViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la création manuelle de sauvegarde", ex, "SettingsViewModel.CreateBackupNowAsync");
             await _dialog.ShowErrorAsync(_locale.T("Settings_Backup"), ex.Message, cancellationToken);
         }
         finally
@@ -410,8 +413,9 @@ public partial class SettingsViewModel : BaseViewModel
                     File.Delete(dbPath);
                 break;
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Error("Échec de la suppression du fichier base de données", ex, "SettingsViewModel.ResetDatabaseAsync");
                 if (i == 4) throw;
                 await Task.Delay(500, cancellationToken);
             }
@@ -426,17 +430,19 @@ public partial class SettingsViewModel : BaseViewModel
     {
         var root = DatabasePath.GetDirectory();
         var dbPath = Path.Combine(root, "data.db");
+        var logPath = Path.Combine(root, "logError");
 
         if (!Directory.Exists(root))
             return;
 
         foreach (var file in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
         {
-            if (string.Equals(file, dbPath, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(file, dbPath, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file, logPath, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             try { File.Delete(file); }
-            catch { }
+            catch (Exception ex) { AppLog.Error("Échec de la suppression d'un fichier lors du formatage", ex, "SettingsViewModel.CleanupAppDataFiles"); }
         }
 
         foreach (var dir in Directory.GetDirectories(root, "*", SearchOption.AllDirectories)
@@ -447,7 +453,7 @@ public partial class SettingsViewModel : BaseViewModel
                 if (!Directory.EnumerateFileSystemEntries(dir).Any())
                     Directory.Delete(dir, false);
             }
-            catch { }
+            catch (Exception ex) { AppLog.Error("Échec de la suppression d'un répertoire vide lors du formatage", ex, "SettingsViewModel.CleanupAppDataFiles"); }
         }
     }
 }

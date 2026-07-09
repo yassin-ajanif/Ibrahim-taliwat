@@ -232,6 +232,7 @@ public partial class ReportsListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec du chargement du rapport", ex, "ReportsListViewModel.LoadReportAsync");
             await _dialog.ShowErrorAsync(_locale.T("Report_Title"), ex.Message, cancellationToken);
         }
         finally

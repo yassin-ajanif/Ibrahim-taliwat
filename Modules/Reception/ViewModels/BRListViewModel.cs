@@ -223,6 +223,7 @@ public partial class BRListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du bon de réception", ex, "BRListViewModel.DeleteBrAsync");
             await _dialog.ShowErrorAsync(_locale.T("BR_DlgShort"), ex.Message, cancellationToken);
         }
         finally
@@ -247,6 +248,7 @@ public partial class BRListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du bon de réception", ex, "BRListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }

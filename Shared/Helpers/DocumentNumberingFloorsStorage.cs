@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GestionCommerciale.Shared.Services;
 
 namespace GestionCommerciale.Shared.Helpers;
 
@@ -37,8 +38,9 @@ public static class DocumentNumberingFloorsStorage
 
             return result;
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de l'analyse du JSON de numérotation", ex, "DocumentNumberingFloorsStorage.Parse");
             return new Dictionary<string, Dictionary<int, int>>(StringComparer.OrdinalIgnoreCase);
         }
     }

@@ -360,6 +360,7 @@ public partial class StockMainViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'ajustement de stock", ex, "StockMainViewModel.AjustementAsync");
             await _dialog.ShowErrorAsync(_locale.T("Stock_Title"), ex.Message, cancellationToken);
         }
         finally

@@ -271,6 +271,7 @@ public partial class BLEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du bon de livraison", ex, "BLEditViewModel.RemoveBlAsync");
             await _dialog.ShowErrorAsync(_locale.T("BL_DlgShort"), ex.Message, cancellationToken);
         }
         finally
@@ -660,6 +661,7 @@ public partial class BLEditViewModel : BaseViewModel
             }
             catch (Exception ex)
             {
+                AppLog.Error("Échec de la validation du bon de livraison", ex, "BLEditViewModel.SaveAsync");
                 await _dialog.ShowErrorAsync(_locale.T("BL_DlgShort"), ex.Message, cancellationToken);
                 await LoadAsync(BlId, cancellationToken);
                 return;
@@ -764,6 +766,7 @@ public partial class BLEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du bon de livraison", ex, "BLEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -785,6 +788,7 @@ public partial class BLEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression du bon de livraison", ex, "BLEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally

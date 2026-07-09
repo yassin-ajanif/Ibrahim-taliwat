@@ -301,6 +301,7 @@ public partial class TiersDetailViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de l'état de compte", ex, "TiersDetailViewModel.ExportLedgerPdfAsync");
             var title = _returnScope == TiersListScope.Fournisseurs
                 ? _locale.T("SupplierLedger_Title")
                 : _locale.T("ClientLedger_Title");

@@ -809,8 +809,9 @@ public sealed class PdfService : IPdfService
             if (!File.Exists(path)) return null;
             return File.ReadAllBytes(path);
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec du chargement du logo pour le PDF", ex, "PdfService.TryLoadLogoBytes");
             return null;
         }
     }

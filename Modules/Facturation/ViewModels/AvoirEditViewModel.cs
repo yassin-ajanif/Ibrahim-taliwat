@@ -623,6 +623,7 @@ public partial class AvoirEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de l'avoir", ex, "AvoirEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -644,6 +645,7 @@ public partial class AvoirEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression de l'avoir", ex, "AvoirEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally
@@ -691,6 +693,7 @@ public partial class AvoirEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de l'avoir", ex, "AvoirEditViewModel.RemoveAvoirAsync");
             await _dialog.ShowErrorAsync(_locale.T("Avoir_Title"), ex.Message, cancellationToken);
         }
         finally

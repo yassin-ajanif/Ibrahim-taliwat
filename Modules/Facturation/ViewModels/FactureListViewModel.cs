@@ -221,6 +221,7 @@ public partial class FactureListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de la facture", ex, "FactureListViewModel.DeleteFactureAsync");
             await _dialog.ShowErrorAsync(_locale.T("Fact_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -245,6 +246,7 @@ public partial class FactureListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de la facture", ex, "FactureListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }

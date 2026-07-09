@@ -75,9 +75,9 @@ public sealed class AppUpdateService : IAppUpdateService
         {
             ClearUpdateState();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Don't surface update check failures in the UI.
+            AppLog.Error("Échec de la vérification des mises à jour", ex, "AppUpdateService.CheckForUpdatesAsync");
         }
         finally
         {
@@ -117,6 +117,7 @@ public sealed class AppUpdateService : IAppUpdateService
        
         catch (Exception ex)
         {
+            AppLog.Error("Échec du téléchargement ou de l'application de la mise à jour", ex, "AppUpdateService.DownloadAndApplyUpdateAsync");
             await _dialogService.ShowErrorAsync(
                 "Mise à jour",
                 $"Impossible d'installer la mise à jour : {ex.Message}",

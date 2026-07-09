@@ -311,6 +311,7 @@ public partial class DevisEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du devis", ex, "DevisEditViewModel.RemoveDevisAsync");
             await _dialog.ShowErrorAsync(_locale.T("Devis_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -638,6 +639,7 @@ public partial class DevisEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du devis", ex, "DevisEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -659,6 +661,7 @@ public partial class DevisEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression du devis", ex, "DevisEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally

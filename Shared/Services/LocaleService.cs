@@ -46,8 +46,9 @@ public sealed class LocaleService : ILocaleService
         {
             return string.Format(CultureInfo.CurrentUICulture, template, args);
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
+            AppLog.Error("Échec du formatage de la chaîne localisée", ex, "LocaleService.Tf");
             return template;
         }
     }

@@ -37,6 +37,20 @@ public partial class App : Application
             sc.AddGestionCommerciale();
             Services = sc.BuildServiceProvider();
 
+            AppLog.Initialize(Services.GetRequiredService<ILoggingService>());
+
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (e.ExceptionObject is Exception ex)
+                    AppLog.Error("Unhandled application exception", ex, "AppDomain");
+            };
+
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                AppLog.Error("Unobserved task exception", e.Exception, "TaskScheduler");
+                e.SetObserved();
+            };
+
             AppDbContext? db = null;
             try
             {
@@ -50,6 +64,11 @@ public partial class App : Application
             catch (SqliteException ex) when (
                 ex.SqliteErrorCode == 1 &&
                 ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase)) { }
+            catch (Exception ex)
+            {
+                AppLog.Error("Database initialization failed", ex, "App.Startup");
+                throw;
+            }
             finally { db?.Dispose(); }
 
             var mainVm = Services.GetRequiredService<MainWindowViewModel>();
@@ -178,8 +197,9 @@ public partial class App : Application
                     "VALUES ('20260430220000_AddSocieteMentionsLegales', '9.0.0');";
                 hist.ExecuteNonQuery();
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Error("Failed to record SocieteMentionsLegales migration", ex, "App.EnsureSocieteMentionsLegalesColumn");
                 // No migrations table (e.g. legacy EnsureCreated DB); column is enough for runtime.
             }
         }
@@ -247,8 +267,9 @@ public partial class App : Application
                     "VALUES ('20260501145728_FactureEstPayeeRemoveStatut', '9.0.0');";
                 hist.ExecuteNonQuery();
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Error("Failed to record FactureEstPayee migration", ex, "App.EnsureFactureEstPayeeColumn");
                 // No migrations table; schema fix is enough for runtime.
             }
         }

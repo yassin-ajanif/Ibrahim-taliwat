@@ -37,9 +37,10 @@ public sealed class BackupService : IBackupService
             source.BackupDatabase(dest);
             return backupFile;
         }
-        catch
+        catch (Exception ex)
         {
-            try { File.Delete(backupFile); } catch { }
+            AppLog.Error("Échec de la création de la sauvegarde", ex, "BackupService.CreateBackupAsync");
+            try { File.Delete(backupFile); } catch (Exception deleteEx) { AppLog.Error("Échec de la suppression du fichier de sauvegarde partiel", deleteEx, "BackupService.CreateBackupAsync"); }
             return null;
         }
     }
@@ -61,9 +62,9 @@ public sealed class BackupService : IBackupService
                 if (lastWrite < cutoff)
                     File.Delete(file);
             }
-            catch
+            catch (Exception ex)
             {
-                // skip files we can't delete
+                AppLog.Error("Échec de la suppression d'une ancienne sauvegarde", ex, "BackupService.CleanupOldBackupsAsync");
             }
         }
 

@@ -1,4 +1,5 @@
 using System.Drawing.Printing;
+using GestionCommerciale.Shared.Services;
 using PdfiumViewer;
 using WinFormsDialogResult = System.Windows.Forms.DialogResult;
 using WinFormsPrintDialog = System.Windows.Forms.PrintDialog;
@@ -127,6 +128,7 @@ public static class WindowsNativePdfPrinter
             }
             catch (Exception ex)
             {
+                AppLog.Error("Échec de l'impression PDF native Windows", ex, "WindowsNativePdfPrinter.RunOnStaAsync");
                 tcs.TrySetException(ex);
             }
         })

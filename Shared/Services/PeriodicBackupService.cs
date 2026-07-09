@@ -59,9 +59,9 @@ public sealed class PeriodicBackupService : IPeriodicBackupService, IDisposable
                 await _backup.CleanupOldBackupsAsync(settings.BackupDirectory, settings.BackupRetentionDays, default);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // silent — don't crash the app on backup failure
+            AppLog.Error("Échec de la sauvegarde périodique", ex, "PeriodicBackupService.OnTimerElapsed");
         }
     }
 

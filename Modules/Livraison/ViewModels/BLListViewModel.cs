@@ -223,6 +223,7 @@ public partial class BLListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du bon de livraison", ex, "BLListViewModel.DeleteBlAsync");
             await _dialog.ShowErrorAsync(_locale.T("BL_DlgShort"), ex.Message, cancellationToken);
         }
         finally
@@ -247,6 +248,7 @@ public partial class BLListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du bon de livraison", ex, "BLListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }

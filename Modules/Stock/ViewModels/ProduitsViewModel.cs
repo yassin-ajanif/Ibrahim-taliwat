@@ -382,6 +382,7 @@ public partial class ProduitsViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du produit", ex, "ProduitsViewModel.DeleteSelectedProduitAsync");
             await _dialog.ShowErrorAsync(_locale.T("Nav_Produits"), ex.Message, cancellationToken);
         }
         finally
@@ -401,8 +402,9 @@ public partial class ProduitsViewModel : BaseViewModel
                 .Select(p => p.ImageData)
                 .FirstOrDefaultAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec du chargement de l'aperçu image produit", ex, "ProduitsViewModel.LoadFicheImagePreviewAsync");
             // ignore load errors; preview stays empty
         }
 
@@ -436,8 +438,9 @@ public partial class ProduitsViewModel : BaseViewModel
             FicheHasImage = true;
             CanRemoveFicheImage = true;
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec du décodage de l'image produit", ex, "ProduitsViewModel.SetFicheImagePreviewFromBytes");
             FicheHasImage = false;
             CanRemoveFicheImage = false;
         }
@@ -494,8 +497,9 @@ public partial class ProduitsViewModel : BaseViewModel
                 return;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de la lecture des informations du fichier image", ex, "ProduitsViewModel.PickImageAsync");
             // continue; compressor will fail if unreadable
         }
 
@@ -506,6 +510,7 @@ public partial class ProduitsViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la compression de l'image produit", ex, "ProduitsViewModel.PickImageAsync");
             await _dialog.ShowErrorAsync(_locale.T("Nav_Produits"), _locale.T("Prod_ErrImagePrefix") + ex.Message, cancellationToken);
             return;
         }
@@ -671,6 +676,7 @@ public partial class ProduitsViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export CSV des produits", ex, "ProduitsViewModel.ExportCsvAsync");
             await _dialog.ShowErrorAsync(_locale.T("Nav_Produits"), ex.Message, cancellationToken);
         }
         finally
@@ -702,6 +708,7 @@ public partial class ProduitsViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'import CSV des produits", ex, "ProduitsViewModel.ImportCsvAsync");
             await _dialog.ShowErrorAsync(_locale.T("Nav_Produits"), ex.Message, cancellationToken);
         }
         finally

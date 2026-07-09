@@ -215,6 +215,7 @@ public partial class FactureFournisseurListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de la facture fournisseur", ex, "FactureFournisseurListViewModel.DeleteFactureFournisseurAsync");
             await _dialog.ShowErrorAsync(_locale.T("Faf_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -239,6 +240,7 @@ public partial class FactureFournisseurListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de la facture fournisseur", ex, "FactureFournisseurListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }

@@ -240,6 +240,7 @@ public partial class ServiceEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'enregistrement du service", ex, "ServiceEditViewModel.SaveAsync");
             await _dialog.ShowInfoAsync(_locale.T("Service_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -262,8 +263,9 @@ public partial class ServiceEditViewModel : BaseViewModel
             FicheImagePreview = new Bitmap(ms);
             CanRemoveFicheImage = true;
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec du chargement de l'aperçu image", ex, "ServiceEditViewModel.SetFicheImagePreviewFromBytes");
             // ignore broken image; keep preview empty
             FicheImagePreview = null;
             CanRemoveFicheImage = false;
@@ -292,8 +294,9 @@ public partial class ServiceEditViewModel : BaseViewModel
                 return;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de la lecture des informations du fichier image", ex, "ServiceEditViewModel.PickImageAsync");
             // continue; compressor may fail if unreadable
         }
 
@@ -304,6 +307,7 @@ public partial class ServiceEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la compression de l'image", ex, "ServiceEditViewModel.PickImageAsync");
             await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Prod_ErrImagePrefix") + ex.Message, cancellationToken);
             return;
         }

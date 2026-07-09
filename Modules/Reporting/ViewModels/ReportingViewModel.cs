@@ -125,6 +125,7 @@ public partial class ReportingViewModel : BaseViewModel
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            AppLog.Error("Échec du chargement des données de reporting", ex, "ReportingViewModel.LoadAsync");
             await _dialog.ShowErrorAsync(_locale.T("Report_Title"), ex.Message, cancellationToken);
         }
         finally

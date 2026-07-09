@@ -207,6 +207,7 @@ public partial class BCVEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression du bon de commande client", ex, "BCVEditViewModel.RemoveBccAsync");
             await _dialog.ShowErrorAsync(_locale.T("BCC_Title"), ex.Message, cancellationToken);
         }
         finally
@@ -507,6 +508,7 @@ public partial class BCVEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF du bon de commande client", ex, "BCVEditViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
         finally
@@ -528,6 +530,7 @@ public partial class BCVEditViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'impression du bon de commande client", ex, "BCVEditViewModel.PrintAsync");
             await _dialog.ShowErrorAsync(_locale.T("Btn_Print"), ex.Message, cancellationToken);
         }
         finally

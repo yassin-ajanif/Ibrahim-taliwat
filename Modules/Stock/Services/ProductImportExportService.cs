@@ -152,8 +152,9 @@ public sealed class ProductImportExportService : IProductImportExportService
                     imported++;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Error("Échec de l'import d'une ligne produit CSV", ex, "ProductImportExportService.ImportCsvAsync");
                 errors++;
             }
         }

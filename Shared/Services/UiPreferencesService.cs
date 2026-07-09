@@ -83,8 +83,9 @@ public sealed class UiPreferencesService : IUiPreferencesService
 
             return JsonSerializer.Deserialize<UiPreferencesRoot>(json, JsonOptions) ?? new UiPreferencesRoot();
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Échec de la lecture des préférences UI", ex, "UiPreferencesService.ReadRoot");
             return new UiPreferencesRoot();
         }
     }
@@ -100,9 +101,9 @@ public sealed class UiPreferencesService : IUiPreferencesService
             var json = JsonSerializer.Serialize(root, JsonOptions);
             File.WriteAllText(PrefsPath, json);
         }
-        catch
+        catch (Exception ex)
         {
-            // Preference persistence should never block user flow.
+            AppLog.Error("Échec de l'enregistrement des préférences UI", ex, "UiPreferencesService.WriteRoot");
         }
     }
 

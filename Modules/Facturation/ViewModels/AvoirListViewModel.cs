@@ -221,6 +221,7 @@ public partial class AvoirListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de l'export PDF de l'avoir", ex, "AvoirListViewModel.ExportPdfAsync");
             await _dialog.ShowErrorAsync(_locale.T("Export_Pdf"), ex.Message, cancellationToken);
         }
     }
@@ -250,6 +251,7 @@ public partial class AvoirListViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            AppLog.Error("Échec de la suppression de l'avoir", ex, "AvoirListViewModel.DeleteAvoirAsync");
             await _dialog.ShowErrorAsync(_locale.T("Avoir_Title"), ex.Message, cancellationToken);
         }
         finally
