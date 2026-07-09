@@ -118,6 +118,9 @@ public partial class ServiceEditViewModel : BaseViewModel
 
     partial void OnDesignationChanged(string value) => UpdateTitle();
 
+    private static string SuggestDraftReference() =>
+        "S-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
+
     public void Load(int? id) => _ = LoadAsync(id, CancellationToken.None);
 
     private async Task LoadAsync(int? id, CancellationToken ct)
@@ -130,7 +133,7 @@ public partial class ServiceEditViewModel : BaseViewModel
 
         if (id == null)
         {
-            Reference = string.Empty;
+            Reference = SuggestDraftReference();
             Designation = string.Empty;
             Unite = "U";
             PrixVenteHt = 0;
@@ -184,24 +187,29 @@ public partial class ServiceEditViewModel : BaseViewModel
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             var refNorm = Reference.Trim();
-            var dup = await db.Services.AnyAsync(
-                s => s.Reference == refNorm && s.Id != (ServiceId ?? 0),
-                cancellationToken);
-            if (dup)
-            {
-                await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Service_ErrDuplicateRef"), cancellationToken);
-                return;
-            }
 
             Service entity;
             if (ServiceId == null)
             {
+                if (await db.Services.AnyAsync(s => s.Reference == refNorm, cancellationToken))
+                {
+                    await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Service_ErrDuplicateRef"), cancellationToken);
+                    return;
+                }
+
                 entity = new Service();
                 db.Services.Add(entity);
             }
             else
             {
-                entity = await db.Services.FirstAsync(s => s.Id == ServiceId, cancellationToken);
+                var id = ServiceId.Value;
+                if (await db.Services.AnyAsync(s => s.Reference == refNorm && s.Id != id, cancellationToken))
+                {
+                    await _dialog.ShowErrorAsync(_locale.T("Service_Title"), _locale.T("Service_ErrDuplicateRef"), cancellationToken);
+                    return;
+                }
+
+                entity = await db.Services.FirstAsync(s => s.Id == id, cancellationToken);
             }
 
             entity.Reference = refNorm;
@@ -229,6 +237,10 @@ public partial class ServiceEditViewModel : BaseViewModel
             SetFicheImagePreviewFromBytes(entity.ImageData);
             await _dialog.ShowInfoAsync(_locale.T("Service_Title"), _locale.T("Service_Saved"), cancellationToken);
             Back();
+        }
+        catch (Exception ex)
+        {
+            await _dialog.ShowInfoAsync(_locale.T("Service_Title"), ex.Message, cancellationToken);
         }
         finally
         {
