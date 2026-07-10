@@ -34,6 +34,8 @@ public partial class ReportsListViewModel : BaseViewModel
             DateTo = new DateTimeOffset(to);
             LoadReportCommand.Execute(null);
         });
+        DatePresets.SyncSelection(DateFrom.Date, DateTo.Date);
+        ShowProfitCharges = true;
         RefreshLabels();
         Title = _locale.T("Reports_Title");
     }
@@ -56,7 +58,7 @@ public partial class ReportsListViewModel : BaseViewModel
     [ObservableProperty] private string _btnProfitCharges = string.Empty;
 
     [ObservableProperty] private int _selectedReportIndex;
-    [ObservableProperty] private DateTimeOffset _dateFrom = new(DateTime.Today.AddDays(-30));
+    [ObservableProperty] private DateTimeOffset _dateFrom = new(DateTime.Today);
     [ObservableProperty] private DateTimeOffset _dateTo = new(DateTime.Today);
 
     // visible columns for each report — used in view
@@ -165,7 +167,14 @@ public partial class ReportsListViewModel : BaseViewModel
     partial void OnDateToChanged(DateTimeOffset value) =>
         DatePresets.SyncSelection(DateFrom.Date, value.Date);
 
-    [RelayCommand] private void GoProfitCharges() => SelectedReportIndex = 0;
+    [RelayCommand]
+    private void GoProfitCharges()
+    {
+        if (SelectedReportIndex != 0)
+            SelectedReportIndex = 0;
+        else
+            LoadReportCommand.Execute(null);
+    }
     [RelayCommand] private void GoSaleByProduct() => SelectedReportIndex = 1;
     [RelayCommand] private void GoSaleByCustomer() => SelectedReportIndex = 2;
     [RelayCommand] private void GoRefunds() => SelectedReportIndex = 3;
