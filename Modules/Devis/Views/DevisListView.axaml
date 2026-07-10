@@ -16,7 +16,7 @@
     </StackPanel>
     <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,8,0,0">
       <Border Grid.Row="0" Background="{DynamicResource CourseraSurfaceBrush}" CornerRadius="8,8,0,0" Padding="10,8" Margin="0,0,0,1">
-        <Grid ColumnDefinitions="120,*,110,118,100,*">
+        <Grid ColumnDefinitions="160,*,110,118,100,*">
           <TextBlock Grid.Column="0" Text="{Binding ColHeaderRef}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
           <TextBlock Grid.Column="1" Text="{Binding ColHeaderClient}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
           <TextBlock Grid.Column="2" Text="{Binding ColHeaderDate}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -37,7 +37,7 @@
                             CommandParameter="{Binding}"/>
                 </ContextMenu>
               </Border.ContextMenu>
-              <Grid ColumnDefinitions="120,*,110,118,100,*">
+              <Grid ColumnDefinitions="160,*,110,118,100,*">
                 <TextBlock Grid.Column="0" Text="{Binding Devis.Numero}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
                 <TextBlock Grid.Column="1" Text="{Binding ClientNom}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
                 <TextBlock Grid.Column="2" Text="{Binding DateShort}" VerticalAlignment="Center" Margin="0,0,12,0"/>
