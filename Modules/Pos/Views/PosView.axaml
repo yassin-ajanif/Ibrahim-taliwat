@@ -173,6 +173,7 @@
                            Watermark="{Binding WmClientSearch}"
                            ItemsSource="{Binding Clients}"
                            ItemFilter="{Binding PartyAutocompleteFilter}"
+                           Text="{Binding ClientSearchText, Mode=TwoWay}"
                            SelectedItem="{Binding SelectedClient, Mode=TwoWay}">
             <AutoCompleteBox.ValueMemberBinding>
               <Binding Path="Nom"/>

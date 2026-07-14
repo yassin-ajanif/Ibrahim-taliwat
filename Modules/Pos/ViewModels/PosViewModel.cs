@@ -82,6 +82,17 @@ public partial class PosViewModel : BaseViewModel
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private CatalogSearchRow? _selectedProduct;
     [ObservableProperty] private TiersEntity? _selectedClient;
+    [ObservableProperty] private string _clientSearchText = string.Empty;
+
+    /// <summary>Raised when the client field must be blanked in the view (AutoCompleteBox Text binding is unreliable).</summary>
+    public event Action? ClientFieldReset;
+
+    private void ResetClientField()
+    {
+        SelectedClient = null;
+        ClientSearchText = string.Empty;
+        ClientFieldReset?.Invoke();
+    }
 
     public AutoCompleteFilterPredicate<object?> PartyAutocompleteFilter => PartyAutoComplete.ItemFilter;
     public string WmClientSearch => _locale.T("Wm_SearchClient");
@@ -316,6 +327,7 @@ public partial class PosViewModel : BaseViewModel
         ShowDiscounts = false;
         PaymentSplits.Clear();
         _lastAutoPaymentTotal = 0;
+        ResetClientField();
         NotifyTotals();
     }
 
@@ -367,7 +379,7 @@ public partial class PosViewModel : BaseViewModel
         var facture = await _posService.CheckoutAsync(clientId, cartData, payments, RemiseGlobale);
 
         Cart.Clear();
-        SelectedClient = null;
+        ResetClientField();
         PaymentSplits.Clear();
         _lastAutoPaymentTotal = 0;
         MontantRecu = 0;
@@ -440,6 +452,7 @@ public partial class PosViewModel : BaseViewModel
             await trx.CommitAsync(cancellationToken);
 
             Cart.Clear();
+            ResetClientField();
             MontantRecu = 0;
             ShowDiscounts = false;
             NotifyTotals();
