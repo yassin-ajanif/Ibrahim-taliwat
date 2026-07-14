@@ -25,6 +25,11 @@
           <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
             <TextBlock Text="{Binding Numero}" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"
                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+            <Border Padding="6,2" Background="#DCFCE7" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4"
+                    IsVisible="{Binding HasInvoicedLabel}" Cursor="Hand" Tapped="OnInvoicedChipTapped"
+                    VerticalAlignment="Center">
+              <TextBlock Text="{Binding InvoicedLabel}" FontSize="11" FontWeight="SemiBold" Foreground="#166534"/>
+            </Border>
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
               <TextBlock Text="{Binding LblDateBr}" VerticalAlignment="Center" Opacity="0.7"/>
               <DatePicker SelectedDate="{Binding Date}" IsEnabled="{Binding CanEdit}"/>

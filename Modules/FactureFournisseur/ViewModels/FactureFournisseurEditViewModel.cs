@@ -8,6 +8,7 @@ using GestionCommerciale.Modules.Auth.Services;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Services;
+using GestionCommerciale.Modules.Reception.ViewModels;
 using GestionCommerciale.Modules.Tiers.Models;
 using GestionCommerciale.Shared.Database;
 using GestionCommerciale.Shared.Helpers;
@@ -586,6 +587,15 @@ public partial class FactureFournisseurEditViewModel : BaseViewModel
         }
         LinkedBrs.Remove(br);
         RefreshTotals();
+    }
+
+    [RelayCommand]
+    private void OpenLinkedBr(LinkedBrRow? br)
+    {
+        if (br is null) return;
+        var vm = _sp.GetRequiredService<BREditViewModel>();
+        vm.Load(br.Id);
+        _workspace.Open(vm);
     }
 
     [RelayCommand]
