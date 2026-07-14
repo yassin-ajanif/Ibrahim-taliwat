@@ -1,6 +1,8 @@
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.Livraison.Models;
 using GestionCommerciale.Modules.Pos.Models;
+using GestionCommerciale.Modules.Services;
+using GestionCommerciale.Modules.Stock;
 using GestionCommerciale.Modules.Stock.Models;
 using GestionCommerciale.Modules.Stock.Services;
 using TiersEntity = GestionCommerciale.Modules.Tiers.Models.Tiers;
@@ -32,6 +34,101 @@ public sealed class PosService : IPosService
     {
         var items = await _catalogSearch.SearchCatalogAsync(query, cancellationToken: cancellationToken);
         return items.ToList();
+    }
+
+    public async Task<(List<DocumentCatalogItem> Items, int TotalCount)> BrowseCatalogAsync(
+        string? query, int skip, int take, CancellationToken cancellationToken = default)
+    {
+        if (take < 1)
+            return ([], 0);
+
+        skip = Math.Max(0, skip);
+
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var productsQ = db.Produits.AsNoTracking()
+            .Where(p => p.Actif)
+            .WhereSearchMatches(query);
+        var servicesQ = db.Services.AsNoTracking()
+            .Where(s => s.Actif)
+            .WhereSearchMatches(query);
+
+        var prodCount = await productsQ.CountAsync(cancellationToken);
+        var svcCount = await servicesQ.CountAsync(cancellationToken);
+        var total = prodCount + svcCount;
+
+        var items = new List<DocumentCatalogItem>(take);
+        var remainingSkip = skip;
+        var remainingTake = take;
+
+        if (remainingSkip < prodCount && remainingTake > 0)
+        {
+            var prodTake = Math.Min(remainingTake, prodCount - remainingSkip);
+            var products = await productsQ
+                .OrderBy(p => p.Reference)
+                .Skip(remainingSkip)
+                .Take(prodTake)
+                .Select(p => new Produit
+                {
+                    Id = p.Id,
+                    Reference = p.Reference,
+                    CodeBarre = p.CodeBarre,
+                    Designation = p.Designation,
+                    Unite = p.Unite,
+                    PrixAchatHT = p.PrixAchatHT,
+                    PrixVenteHT = p.PrixVenteHT,
+                    TauxTVA = p.TauxTVA,
+                    Actif = p.Actif,
+                    ImageData = p.ImageData
+                })
+                .ToListAsync(cancellationToken);
+            items.AddRange(products.Select(DocumentCatalogItem.FromProduct));
+            remainingTake -= products.Count;
+            remainingSkip = 0;
+        }
+        else
+        {
+            remainingSkip -= prodCount;
+        }
+
+        if (remainingTake > 0)
+        {
+            var services = await servicesQ
+                .OrderBy(s => s.Reference)
+                .Skip(remainingSkip)
+                .Take(remainingTake)
+                .Select(s => new GestionCommerciale.Modules.Services.Models.Service
+                {
+                    Id = s.Id,
+                    Reference = s.Reference,
+                    Designation = s.Designation,
+                    Unite = s.Unite,
+                    PrixVenteHT = s.PrixVenteHT,
+                    CoutHT = s.CoutHT,
+                    TauxTVA = s.TauxTVA,
+                    Actif = s.Actif,
+                    ImageData = s.ImageData
+                })
+                .ToListAsync(cancellationToken);
+            items.AddRange(services.Select(DocumentCatalogItem.FromService));
+        }
+
+        return (items, total);
+    }
+
+    public async Task<DocumentCatalogItem?> FindByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+            return null;
+
+        var code = barcode.Trim();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var produit = await db.Produits.AsNoTracking()
+            .Where(p => p.Actif && p.CodeBarre != null && p.CodeBarre.ToLower() == code.ToLower())
+            .SelectForListWithoutImageData()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return produit is null ? null : DocumentCatalogItem.FromProduct(produit);
     }
 
     public async Task<List<Facture>> SearchFacturesAsync(string query, CancellationToken cancellationToken = default)

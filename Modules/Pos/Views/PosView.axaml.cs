@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using GestionCommerciale.Modules.Pos.ViewModels;
 
@@ -14,32 +15,26 @@ public partial class PosView : UserControl
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
-    private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
-    {
-        if (DataContext is PosViewModel vm)
-            vm.SearchProductsCommand.Execute(null);
-    }
-
-    private void OnSearchKeyDown(object? sender, KeyEventArgs e)
+    private async void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;
         if (DataContext is not PosViewModel vm) return;
         e.Handled = true;
+
         var text = vm.SearchText?.Trim();
         if (string.IsNullOrEmpty(text))
-        {
-            vm.SearchText = string.Empty;
             return;
-        }
 
-        var match = vm.SearchResults.FirstOrDefault(r =>
-            !r.IsService &&
-            !string.IsNullOrEmpty(r.CodeBarre) &&
-            r.CodeBarre.Equals(text, StringComparison.OrdinalIgnoreCase));
-
-        if (match is not null)
-            vm.AddProductCommand.Execute(match);
-
+        await vm.TryAddByBarcodeAsync(text);
         vm.SearchText = string.Empty;
+    }
+
+    private void OnProductCardTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is not PosViewModel vm || sender is not Border border)
+            return;
+
+        if (border.Tag is CatalogSearchRow row)
+            vm.AddProductCommand.Execute(row);
     }
 }

@@ -45,10 +45,12 @@ public partial class PosViewModel : BaseViewModel
         _numbers = numbers;
         _stock = stock;
         Title = _locale.T("Nav_Pos");
+        Pagination = new PaginationHelper(() => _ = LoadCatalogAsync()) { PageSize = 24 };
         _locale.CultureApplied += (_, _) =>
         {
             Title = _locale.T("Nav_Pos");
             OnPropertyChanged(nameof(SearchWatermark));
+            OnPropertyChanged(nameof(CatalogTitle));
             OnPropertyChanged(nameof(CartTitle));
             OnPropertyChanged(nameof(TotalLabel));
             OnPropertyChanged(nameof(BtnClearCart));
@@ -60,6 +62,7 @@ public partial class PosViewModel : BaseViewModel
         };
         _ = LoadClientsAsync();
         _ = LoadSettingsAsync();
+        _ = LoadCatalogAsync();
     }
 
     [ObservableProperty] private bool _showKeyboard;
@@ -74,6 +77,7 @@ public partial class PosViewModel : BaseViewModel
     public ObservableCollection<CatalogSearchRow> SearchResults { get; } = [];
     public ObservableCollection<CartLineRow> Cart { get; } = [];
     public ObservableCollection<TiersEntity> Clients { get; } = [];
+    public PaginationHelper Pagination { get; }
 
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private CatalogSearchRow? _selectedProduct;
@@ -96,7 +100,8 @@ public partial class PosViewModel : BaseViewModel
     public bool HasItems => Cart.Count > 0;
 
     public string SearchWatermark => _locale.T("Wm_SearchCatalog");
-    public string CartTitle => _locale.T("Nav_Pos");
+    public string CatalogTitle => _locale.T("Nav_Pos");
+    public string CartTitle => _locale.T("Pos_CartTitle");
     public string TotalLabel => "Total TTC";
     public string BtnClearCart => "Vider";
     public string BtnRefund => "Rembourser";
@@ -190,13 +195,39 @@ public partial class PosViewModel : BaseViewModel
         SyncPaymentSplits();
     }
 
+    partial void OnSearchTextChanged(string value)
+    {
+        Pagination.CurrentPage = 1;
+        _ = LoadCatalogAsync();
+    }
+
     [RelayCommand]
     private async Task SearchProducts()
     {
-        var list = await _posService.SearchCatalogAsync(SearchText);
+        await LoadCatalogAsync();
+    }
+
+    private async Task LoadCatalogAsync()
+    {
+        var (items, total) = await _posService.BrowseCatalogAsync(
+            SearchText,
+            Pagination.Skip,
+            Pagination.PageSize);
+
+        foreach (var old in SearchResults)
+            old.Dispose();
         SearchResults.Clear();
-        foreach (var item in list)
+        foreach (var item in items)
             SearchResults.Add(new CatalogSearchRow(item));
+
+        Pagination.TotalCount = total;
+    }
+
+    public async Task TryAddByBarcodeAsync(string barcode)
+    {
+        var item = await _posService.FindByBarcodeAsync(barcode);
+        if (item is null) return;
+        AddProduct(new CatalogSearchRow(item));
     }
 
     [RelayCommand]

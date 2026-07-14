@@ -173,6 +173,7 @@ internal static class UiTranslationExtras
 
         ["Wm_SearchProducts"] = ("Rechercher : réf., nom ou code-barres…", "بحث: مرجع، اسم، باركود…"),
         ["Wm_SearchCatalog"] = ("Rechercher : réf., nom, code-barres (produits & services)…", "بحث: مرجع، اسم، باركود (منتجات وخدمات)…"),
+        ["Pos_CartTitle"] = ("Panier", "السلة"),
         ["Pos_ShowDiscounts"] = ("Remise", "خصم"),
         ["Pos_HideDiscounts"] = ("Masquer remises", "إخفاء الخصومات"),
         ["Pos_LabelRemisePct"] = ("Remise %", "خصم %"),

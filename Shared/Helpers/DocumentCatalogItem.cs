@@ -20,6 +20,7 @@ public sealed class DocumentCatalogItem
     public decimal PrixVenteHT { get; init; }
     public decimal PrixAchatHT { get; init; }
     public decimal TauxTVA { get; init; }
+    public byte[]? ImageData { get; init; }
 
     public string DisplayLabel => $"{Reference} — {Designation}";
 
@@ -33,7 +34,8 @@ public sealed class DocumentCatalogItem
         Unite = p.Unite,
         PrixVenteHT = p.PrixVenteHT,
         PrixAchatHT = p.PrixAchatHT,
-        TauxTVA = p.TauxTVA
+        TauxTVA = p.TauxTVA,
+        ImageData = p.ImageData
     };
 
     public static DocumentCatalogItem FromService(Service s) => new()
@@ -45,7 +47,8 @@ public sealed class DocumentCatalogItem
         Unite = s.Unite,
         PrixVenteHT = s.PrixVenteHT,
         PrixAchatHT = s.CoutHT,
-        TauxTVA = s.TauxTVA
+        TauxTVA = s.TauxTVA,
+        ImageData = s.ImageData
     };
 
     public static IReadOnlyList<DocumentCatalogItem> MergeSearchResults(

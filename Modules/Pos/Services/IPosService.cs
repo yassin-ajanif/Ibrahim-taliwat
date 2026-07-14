@@ -9,6 +9,9 @@ namespace GestionCommerciale.Modules.Pos.Services;
 public interface IPosService
 {
     Task<List<DocumentCatalogItem>> SearchCatalogAsync(string query, CancellationToken cancellationToken = default);
+    Task<(List<DocumentCatalogItem> Items, int TotalCount)> BrowseCatalogAsync(
+        string? query, int skip, int take, CancellationToken cancellationToken = default);
+    Task<DocumentCatalogItem?> FindByBarcodeAsync(string barcode, CancellationToken cancellationToken = default);
     Task<Facture> CheckoutAsync(int clientId, List<CartLineData> cart, IReadOnlyList<(ModePaiement Mode, decimal Montant)> payments, decimal remiseGlobale = 0, CancellationToken cancellationToken = default);
     Task<int> GetDefaultClientIdAsync(CancellationToken cancellationToken = default);
     Task<List<TiersEntity>> GetActiveClientsAsync(CancellationToken cancellationToken = default);
