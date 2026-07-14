@@ -239,9 +239,19 @@ public sealed partial class ReportDailySaleRow : ObservableObject
     public ObservableCollection<ReportDailySaleDetailRow> Details => _details;
 }
 
+public enum ReportProfitChargeKind
+{
+    SaleMargin,
+    AvoirClient,
+    Purchase,
+    AvoirFournisseur,
+    Charge
+}
+
 public sealed class ReportProfitChargeRow
 {
     public ReportProfitChargeRow(
+        ReportProfitChargeKind kind,
         string typeLabel,
         string refLibelle,
         DateTime date,
@@ -250,6 +260,7 @@ public sealed class ReportProfitChargeRow
         string devise,
         bool isPositive)
     {
+        Kind = kind;
         TypeLabel = typeLabel;
         RefLibelle = refLibelle;
         Date = date;
@@ -263,6 +274,7 @@ public sealed class ReportProfitChargeRow
         LblAmount = $"{sign}{amount:N2} {devise}";
     }
 
+    public ReportProfitChargeKind Kind { get; }
     public string TypeLabel { get; }
     public string RefLibelle { get; }
     public DateTime Date { get; }

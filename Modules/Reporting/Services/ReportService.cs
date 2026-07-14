@@ -644,6 +644,7 @@ public sealed class ReportService : IReportService
             var profit = ttc - costHt;
             totalMargin += profit;
             rows.Add(new ReportProfitChargeRow(
+                ReportProfitChargeKind.SaleMargin,
                 typeMarge,
                 f.Numero ?? string.Empty,
                 f.Date,
@@ -666,6 +667,7 @@ public sealed class ReportService : IReportService
             var (_, _, ttc) = DocumentTotalsHelper.AvoirTotals(lignes);
             totalAvoirsClient += ttc;
             rows.Add(new ReportProfitChargeRow(
+                ReportProfitChargeKind.AvoirClient,
                 typeAvoirClient,
                 a.Numero ?? string.Empty,
                 a.Date,
@@ -706,6 +708,7 @@ public sealed class ReportService : IReportService
             var (_, _, ttc) = DocumentTotalsHelper.FactureFournisseurTotals(lignes, f.RemiseGlobale);
             totalPurchases += ttc;
             rows.Add(new ReportProfitChargeRow(
+                ReportProfitChargeKind.Purchase,
                 typeAchat,
                 f.Numero ?? string.Empty,
                 f.Date,
@@ -743,6 +746,7 @@ public sealed class ReportService : IReportService
             var (_, _, ttc) = DocumentTotalsHelper.AvoirFournisseurTotals(lignes);
             totalAvoirsFournisseur += ttc;
             rows.Add(new ReportProfitChargeRow(
+                ReportProfitChargeKind.AvoirFournisseur,
                 typeAvoirFournisseur,
                 a.Numero ?? string.Empty,
                 a.Date,
@@ -772,6 +776,7 @@ public sealed class ReportService : IReportService
                     : $"{c.Libelle} — {beneficiary}";
 
             rows.Add(new ReportProfitChargeRow(
+                ReportProfitChargeKind.Charge,
                 c.TypeCharge?.Nom ?? typeCharge,
                 label,
                 c.Date,

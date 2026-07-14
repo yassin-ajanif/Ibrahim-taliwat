@@ -103,6 +103,12 @@ public partial class ReportsListViewModel : BaseViewModel
     [ObservableProperty] private string _colProfitHt = string.Empty;
     [ObservableProperty] private string _colProfitAmount = string.Empty;
     [ObservableProperty] private bool _showPagination;
+    [ObservableProperty] private bool _isProfitFilterMarginActive;
+    [ObservableProperty] private bool _isProfitFilterAvoirsClientActive;
+    [ObservableProperty] private bool _isProfitFilterPurchasesActive;
+    [ObservableProperty] private bool _isProfitFilterAvoirsFournisseurActive;
+    [ObservableProperty] private bool _isProfitFilterChargesActive;
+    [ObservableProperty] private bool _isProfitFilterAllActive = true;
 
     private List<ReportSaleByProductRow> _allSalesByProduct = [];
     private List<ReportSaleByCustomerRow> _allSalesByCustomer = [];
@@ -111,6 +117,8 @@ public partial class ReportsListViewModel : BaseViewModel
     private List<ReportUnpaidRow> _allUnpaidSales = [];
     private List<ReportStockMovementRow> _allStockMovements = [];
     private List<ReportProfitChargeRow> _allProfitCharges = [];
+    private List<ReportProfitChargeRow> _filteredProfitCharges = [];
+    private ReportProfitChargeKind? _profitFilterKind;
 
     public ObservableCollection<ReportSaleByProductRow> SalesByProduct { get; } = [];
     public ObservableCollection<ReportSaleByCustomerRow> SalesByCustomer { get; } = [];
@@ -314,7 +322,49 @@ public partial class ReportsListViewModel : BaseViewModel
         var netSign = result.NetResult >= 0 ? "+" : "";
         LblProfitChargesNetResult = $"{netSign}{result.NetResult:N2} {dev}";
         IsNetPositive = result.NetResult >= 0;
-        FinishPagedLoad(_allProfitCharges.Count);
+        ApplyProfitFilter(_profitFilterKind);
+    }
+
+    [RelayCommand]
+    private void FilterProfitMargin() => ToggleProfitFilter(ReportProfitChargeKind.SaleMargin);
+
+    [RelayCommand]
+    private void FilterProfitAvoirsClient() => ToggleProfitFilter(ReportProfitChargeKind.AvoirClient);
+
+    [RelayCommand]
+    private void FilterProfitPurchases() => ToggleProfitFilter(ReportProfitChargeKind.Purchase);
+
+    [RelayCommand]
+    private void FilterProfitAvoirsFournisseur() => ToggleProfitFilter(ReportProfitChargeKind.AvoirFournisseur);
+
+    [RelayCommand]
+    private void FilterProfitCharges() => ToggleProfitFilter(ReportProfitChargeKind.Charge);
+
+    [RelayCommand]
+    private void FilterProfitAll() => ToggleProfitFilter(null);
+
+    private void ToggleProfitFilter(ReportProfitChargeKind? kind)
+    {
+        if (_profitFilterKind == kind)
+            kind = null; // click again clears filter
+        ApplyProfitFilter(kind);
+    }
+
+    private void ApplyProfitFilter(ReportProfitChargeKind? kind)
+    {
+        _profitFilterKind = kind;
+        IsProfitFilterMarginActive = kind == ReportProfitChargeKind.SaleMargin;
+        IsProfitFilterAvoirsClientActive = kind == ReportProfitChargeKind.AvoirClient;
+        IsProfitFilterPurchasesActive = kind == ReportProfitChargeKind.Purchase;
+        IsProfitFilterAvoirsFournisseurActive = kind == ReportProfitChargeKind.AvoirFournisseur;
+        IsProfitFilterChargesActive = kind == ReportProfitChargeKind.Charge;
+        IsProfitFilterAllActive = kind == null;
+
+        _filteredProfitCharges = kind == null
+            ? _allProfitCharges
+            : _allProfitCharges.Where(r => r.Kind == kind).ToList();
+
+        FinishPagedLoad(_filteredProfitCharges.Count);
     }
 
     private void FinishPagedLoad(int totalCount)
@@ -331,7 +381,7 @@ public partial class ReportsListViewModel : BaseViewModel
         switch (SelectedReportIndex)
         {
             case 0:
-                ApplyPage(ProfitCharges, _allProfitCharges);
+                ApplyPage(ProfitCharges, _filteredProfitCharges);
                 break;
             case 1:
                 ApplyPage(SalesByProduct, _allSalesByProduct);

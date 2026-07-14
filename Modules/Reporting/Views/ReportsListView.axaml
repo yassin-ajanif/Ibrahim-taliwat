@@ -485,56 +485,74 @@
 
         <!-- Profit & charges report -->
         <StackPanel Spacing="8" IsVisible="{Binding ShowProfitCharges}">
-          <!-- Summary cards -->
+          <!-- Summary cards (Borders = no button hover; Tapped filters) -->
           <Grid ColumnDefinitions="*,*,*,*,*,*">
-            <Border Grid.Column="0" Padding="12,12" CornerRadius="10" Margin="0,0,4,0"
+            <Border Grid.Column="0" Tag="Margin" Margin="0,0,4,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{Binding IsProfitFilterMarginActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                    BorderThickness="{Binding IsProfitFilterMarginActive, Converter={x:Static conv:BoolToThicknessConverter.Instance}}"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesMarginLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesTotalMargin}" FontWeight="Bold" FontSize="14"
                            Foreground="{DynamicResource CourseraSuccessBrush}"/>
               </StackPanel>
             </Border>
-            <Border Grid.Column="1" Padding="12,12" CornerRadius="10" Margin="4,0"
+            <Border Grid.Column="1" Tag="AvoirsClient" Margin="4,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{Binding IsProfitFilterAvoirsClientActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                    BorderThickness="{Binding IsProfitFilterAvoirsClientActive, Converter={x:Static conv:BoolToThicknessConverter.Instance}}"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesAvoirsClientLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesTotalAvoirsClient}" FontWeight="Bold" FontSize="14"
                            Foreground="{DynamicResource CourseraDangerBrush}"/>
               </StackPanel>
             </Border>
-            <Border Grid.Column="2" Padding="12,12" CornerRadius="10" Margin="4,0"
+            <Border Grid.Column="2" Tag="Purchases" Margin="4,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{Binding IsProfitFilterPurchasesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                    BorderThickness="{Binding IsProfitFilterPurchasesActive, Converter={x:Static conv:BoolToThicknessConverter.Instance}}"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesPurchasesLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesTotalPurchases}" FontWeight="Bold" FontSize="14"
                            Foreground="{DynamicResource CourseraDangerBrush}"/>
               </StackPanel>
             </Border>
-            <Border Grid.Column="3" Padding="12,12" CornerRadius="10" Margin="4,0"
+            <Border Grid.Column="3" Tag="AvoirsFournisseur" Margin="4,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{Binding IsProfitFilterAvoirsFournisseurActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                    BorderThickness="{Binding IsProfitFilterAvoirsFournisseurActive, Converter={x:Static conv:BoolToThicknessConverter.Instance}}"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesAvoirsFournisseurLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesTotalAvoirsFournisseur}" FontWeight="Bold" FontSize="14"
                            Foreground="{DynamicResource CourseraSuccessBrush}"/>
               </StackPanel>
             </Border>
-            <Border Grid.Column="4" Padding="12,12" CornerRadius="10" Margin="4,0"
+            <Border Grid.Column="4" Tag="Charges" Margin="4,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{Binding IsProfitFilterChargesActive, Converter={x:Static conv:NavTabHighlightConverter.Instance}, ConverterParameter=border}"
+                    BorderThickness="{Binding IsProfitFilterChargesActive, Converter={x:Static conv:BoolToThicknessConverter.Instance}}"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesChargesLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesTotalCharges}" FontWeight="Bold" FontSize="14"
                            Foreground="{DynamicResource CourseraDangerBrush}"/>
               </StackPanel>
             </Border>
-            <Border Grid.Column="5" Padding="12,12" CornerRadius="10" Margin="4,0,0,0"
+            <Border Grid.Column="5" Tag="All" Margin="4,0,0,0" Padding="12,12" Cursor="Hand"
                     Background="{DynamicResource CourseraSurfaceBrush}"
-                    BorderBrush="{DynamicResource CourseraBorderBrush}" BorderThickness="1">
+                    BorderBrush="{DynamicResource CourseraBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Tapped="OnProfitFilterCardTapped">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding LblProfitChargesNetLabel}" Classes="subtle" FontSize="11" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding LblProfitChargesNetResult}" FontWeight="Bold" FontSize="14"
