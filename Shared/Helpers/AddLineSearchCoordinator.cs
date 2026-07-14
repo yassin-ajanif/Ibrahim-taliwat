@@ -17,14 +17,31 @@ public sealed class AddLineCatalogSearchCoordinator
 
     public void Clear()
     {
-        Interlocked.Increment(ref _generation);
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
-        if (Dispatcher.UIThread.CheckAccess())
-            Results.Clear();
-        else
-            Dispatcher.UIThread.Post(Results.Clear);
+        CancelSearch();
+        // Never clear Results on the same call stack as an AutoCompleteBox selection
+        // change — Avalonia crashes with ArgumentOutOfRangeException in SelectionModel.
+        PostClearResults();
+    }
+
+    /// <summary>
+    /// Clears pick + search text after a catalog selection, once AutoCompleteBox finishes committing.
+    /// Results are cleared on a later dispatcher turn so SelectionModel is not mid-update.
+    /// </summary>
+    public void ResetAfterPick(Action resetSearchField, Action? onCompleted = null)
+    {
+        CancelSearch();
+        Dispatcher.UIThread.Post(() =>
+        {
+            resetSearchField();
+            // Second hop: SelectedItem/Text bindings must apply before ItemsSource Clear.
+            // Clearing in the same Post as SelectedItem=null still crashes AutoCompleteBox.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (Results.Count > 0)
+                    Results.Clear();
+                onCompleted?.Invoke();
+            }, DispatcherPriority.Background);
+        }, DispatcherPriority.Background);
     }
 
     public void QueueSearch(string? text)
@@ -33,6 +50,23 @@ public sealed class AddLineCatalogSearchCoordinator
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
         _ = RunSearchAsync(text, Interlocked.Increment(ref _generation), _cts.Token);
+    }
+
+    private void CancelSearch()
+    {
+        Interlocked.Increment(ref _generation);
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
+
+    private void PostClearResults()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (Results.Count > 0)
+                Results.Clear();
+        }, DispatcherPriority.Background);
     }
 
     private async Task RunSearchAsync(string? text, int generation, CancellationToken cancellationToken)
@@ -46,7 +80,8 @@ public sealed class AddLineCatalogSearchCoordinator
                 {
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        if (generation == _generation) Results.Clear();
+                        if (generation == _generation && Results.Count > 0)
+                            Results.Clear();
                     });
                 }
                 return;

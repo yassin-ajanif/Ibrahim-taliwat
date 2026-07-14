@@ -63,6 +63,7 @@
                          Watermark="{Binding WmAddProduct}"
                          ItemsSource="{Binding AddLineSearchResults}"
                          ItemFilter="{x:Static cat:DocumentCatalogAutoComplete.ItemFilter}"
+                         cat:DocumentCatalogAutoComplete.ClearTextAfterPick="True"
                          Text="{Binding AddLineSearchText, Mode=TwoWay}"
                          SelectedItem="{Binding AddLineCatalogPick, Mode=TwoWay}"
                          IsEnabled="{Binding CanEdit}">

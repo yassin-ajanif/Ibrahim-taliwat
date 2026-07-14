@@ -125,7 +125,11 @@ public partial class BCEditViewModel : BaseViewModel
         RefreshTotals();
     }
 
-    partial void OnAddLineSearchTextChanged(string value) => _addLineSearch.QueueSearch(value);
+    partial void OnAddLineSearchTextChanged(string value)
+    {
+        if (_suppressAddLinePick) return;
+        _addLineSearch.QueueSearch(value);
+    }
 
     private void LineOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -241,10 +245,13 @@ public partial class BCEditViewModel : BaseViewModel
             SelectedLine = row;
         }
 
-        AddLineCatalogPick = null;
-        AddLineSearchText = string.Empty;
-        _suppressAddLinePick = false;
-        _addLineSearch.Clear();
+        _addLineSearch.ResetAfterPick(
+            () =>
+            {
+                AddLineCatalogPick = null;
+                AddLineSearchText = string.Empty;
+            },
+            () => _suppressAddLinePick = false);
         RefreshTotals();
     }
 
