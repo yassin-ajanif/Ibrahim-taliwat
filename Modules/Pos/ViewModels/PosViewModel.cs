@@ -124,6 +124,9 @@ public partial class PosViewModel : BaseViewModel
     public string LabelRemiseGlobaleMontant => _locale.T("Pos_LabelRemiseMontant");
     public string BtnDiscounts => ShowDiscounts ? _locale.T("Pos_HideDiscounts") : _locale.T("Pos_ShowDiscounts");
 
+    /// <summary>Last auto-filled payment total; used so manual edits are not overwritten.</summary>
+    private decimal _lastAutoPaymentTotal;
+
     private decimal AjusterRemiseGlobale(decimal montant)
     {
         if (RemiseGlobale > 0)
@@ -138,17 +141,13 @@ public partial class PosViewModel : BaseViewModel
         if (PaymentSplits.Count == 0)
         {
             PaymentSplits.Add(new PaymentSplitRow { Mode = ModePaiement.Especes, Montant = TotalTtc });
+            _lastAutoPaymentTotal = TotalTtc;
         }
-        else if (PaymentSplits.Count == 1)
+        else if (PaymentSplits.Count == 1 && PaymentSplits[0].Montant == _lastAutoPaymentTotal)
         {
+            // Keep a single untouched payment line aligned with the cart total.
             PaymentSplits[0].Montant = TotalTtc;
-        }
-
-        var allocated = PaymentSplits.Sum(p => p.Montant);
-        if (PaymentSplits.Count > 1 && allocated != TotalTtc)
-        {
-            var diff = TotalTtc - allocated;
-            PaymentSplits[^1].Montant += diff;
+            _lastAutoPaymentTotal = TotalTtc;
         }
 
         OnPropertyChanged(nameof(TotalPaiements));
@@ -183,7 +182,12 @@ public partial class PosViewModel : BaseViewModel
     [RelayCommand]
     private void AddPaymentSplit()
     {
-        PaymentSplits.Add(new PaymentSplitRow { Mode = ModePaiement.TPE, Montant = 0 });
+        var remaining = Math.Max(0, TotalTtc - PaymentSplits.Sum(p => p.Montant));
+        PaymentSplits.Add(new PaymentSplitRow { Mode = ModePaiement.TPE, Montant = remaining });
+        if (PaymentSplits.Count == 1)
+            _lastAutoPaymentTotal = remaining;
+        else
+            _lastAutoPaymentTotal = decimal.MinValue; // mark as customized / multi-split
         SyncPaymentSplits();
     }
 
@@ -192,6 +196,8 @@ public partial class PosViewModel : BaseViewModel
     {
         if (row is null || PaymentSplits.Count <= 1) return;
         PaymentSplits.Remove(row);
+        if (PaymentSplits.Count == 1)
+            _lastAutoPaymentTotal = PaymentSplits[0].Montant;
         SyncPaymentSplits();
     }
 
@@ -308,6 +314,8 @@ public partial class PosViewModel : BaseViewModel
         Cart.Clear();
         MontantRecu = 0;
         ShowDiscounts = false;
+        PaymentSplits.Clear();
+        _lastAutoPaymentTotal = 0;
         NotifyTotals();
     }
 
@@ -338,9 +346,20 @@ public partial class PosViewModel : BaseViewModel
         }).ToList();
 
         var totalPaiements = PaymentSplits.Sum(p => p.Montant);
-        if (totalPaiements > TotalTtc)
+        const decimal tolerance = 0.009m;
+        var reste = TotalTtc - totalPaiements;
+
+        if (reste > tolerance)
         {
-            await _dialog.ShowErrorAsync("POS", "Le total des paiements ne peut pas dépasser le montant total TTC.");
+            await _dialog.ShowErrorAsync(
+                "POS",
+                _locale.Tf("Pos_PaymentIncomplete", totalPaiements, TotalTtc, reste));
+            return;
+        }
+
+        if (totalPaiements - TotalTtc > tolerance)
+        {
+            await _dialog.ShowErrorAsync("POS", _locale.T("Pos_PaymentExceedsTotal"));
             return;
         }
 
@@ -350,6 +369,7 @@ public partial class PosViewModel : BaseViewModel
         Cart.Clear();
         SelectedClient = null;
         PaymentSplits.Clear();
+        _lastAutoPaymentTotal = 0;
         MontantRecu = 0;
         ShowDiscounts = false;
         NotifyTotals();

@@ -29,7 +29,7 @@
             <TextBlock Text="{Binding BccLabel}" FontSize="11" FontWeight="SemiBold" Foreground="#1E40AF"/>
           </Border>
           <Border Padding="6,2" Background="#DCFCE7" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4"
-                  IsVisible="{Binding HasInvoicedLabel}">
+                  IsVisible="{Binding HasInvoicedLabel}" Cursor="Hand" Tapped="OnInvoicedChipTapped">
             <TextBlock Text="{Binding InvoicedLabel}" FontSize="11" FontWeight="SemiBold" Foreground="#166534"/>
           </Border>
         </StackPanel>

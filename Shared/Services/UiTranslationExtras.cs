@@ -178,6 +178,12 @@ internal static class UiTranslationExtras
         ["Pos_HideDiscounts"] = ("Masquer remises", "إخفاء الخصومات"),
         ["Pos_LabelRemisePct"] = ("Remise %", "خصم %"),
         ["Pos_LabelRemiseMontant"] = ("Remise montant", "خصم مبلغ"),
+        ["Pos_PaymentIncomplete"] = (
+            "Le montant des paiements est incomplet.\nPayé : {0:N2} DH\nTotal : {1:N2} DH\nReste : {2:N2} DH",
+            "مبلغ الدفعات غير مكتمل.\nالمدفوع: {0:N2} DH\nالإجمالي: {1:N2} DH\nالمتبقي: {2:N2} DH"),
+        ["Pos_PaymentExceedsTotal"] = (
+            "Le total des paiements ne peut pas dépasser le montant total TTC.",
+            "لا يمكن أن يتجاوز إجمالي الدفعات المبلغ الإجمالي شامل الضريبة."),
         ["Wm_SearchTiers"] = ("Recherche", "بحث"),
         ["Wm_SearchClient"] = ("Rechercher un client…", "ابحث عن عميل…"),
         ["Wm_SearchMovementClient"] = ("Filtrer par client ou fournisseur…", "تصفية حسب العميل أو المورد…"),

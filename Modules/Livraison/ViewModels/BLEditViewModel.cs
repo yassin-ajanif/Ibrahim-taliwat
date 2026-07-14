@@ -112,6 +112,7 @@ public partial class BLEditViewModel : BaseViewModel
     [ObservableProperty] private string _lblDocColMontantTtc = string.Empty;
     [ObservableProperty] private string _lblTotals = string.Empty;
     [ObservableProperty] private string _invoicedLabel = string.Empty;
+    [ObservableProperty] private int? _linkedFactureId;
     [ObservableProperty] private string _bccLabel = string.Empty;
     [ObservableProperty] private string _lblLinkedBcc = string.Empty;
     [ObservableProperty] private string _btnAddBcc = string.Empty;
@@ -385,6 +386,7 @@ public partial class BLEditViewModel : BaseViewModel
         Devise = CurrencyHelper.FromSettings(cfg);
 
         InvoicedLabel = string.Empty;
+        LinkedFactureId = null;
 
         if (id == null)
         {
@@ -398,7 +400,13 @@ public partial class BLEditViewModel : BaseViewModel
 
         var factNum = await _blLinkService.GetInvoicingStatusAsync(id.Value, cancellationToken);
         if (factNum != null)
+        {
             InvoicedLabel = _locale.Tf("BL_FacturedOn", factNum);
+            LinkedFactureId = await db.BonsLivraison.AsNoTracking()
+                .Where(x => x.Id == id.Value)
+                .Select(x => x.FactureId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
 
         var b = await db.BonsLivraison.Include(x => x.Lignes).FirstAsync(x => x.Id == id, cancellationToken);
         DevisId = b.DevisId;
@@ -755,6 +763,15 @@ public partial class BLEditViewModel : BaseViewModel
 
         var vm = _sp.GetRequiredService<FactureEditViewModel>();
         vm.LoadFromBL(BlId.Value);
+        _workspace.Open(vm);
+    }
+
+    [RelayCommand]
+    private void OpenLinkedFacture()
+    {
+        if (LinkedFactureId is not int factureId) return;
+        var vm = _sp.GetRequiredService<FactureEditViewModel>();
+        vm.Load(factureId);
         _workspace.Open(vm);
     }
 
