@@ -278,7 +278,9 @@ public sealed class ReportProfitChargeRow
 public sealed class ReportProfitChargesResult
 {
     public required decimal TotalSalesMargin { get; init; }
+    public required decimal TotalAvoirsClient { get; init; }
     public required decimal TotalPurchases { get; init; }
+    public required decimal TotalAvoirsFournisseur { get; init; }
     public required decimal TotalCharges { get; init; }
     public required decimal NetResult { get; init; }
     public required string Devise { get; init; }

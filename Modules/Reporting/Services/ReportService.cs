@@ -1,3 +1,4 @@
+using GestionCommerciale.Modules.AvoirFournisseur.Models;
 using GestionCommerciale.Modules.Charges.Models;
 using GestionCommerciale.Modules.Facturation.Models;
 using GestionCommerciale.Modules.FactureFournisseur.Models;
@@ -33,12 +34,14 @@ public sealed class ReportService : IReportService
         var dev = await GetDeviseAsync(ct);
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var toEnd = to.Date.AddDays(1);
+        var serviceCategory = _locale.T("Reports_CategoryService");
 
         var lignes = await db.FactureLignes.AsNoTracking()
             .Where(l => l.Facture!.Date >= from && l.Facture.Date < toEnd)
             .Select(l => new
             {
                 l.ProduitId,
+                l.ServiceId,
                 l.Quantite,
                 l.PrixUnitaireHT,
                 l.Remise,
@@ -48,13 +51,24 @@ public sealed class ReportService : IReportService
             .ToListAsync(ct);
 
         var prodIds = lignes.Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
-        var produits = await db.Produits.AsNoTracking()
-            .Where(p => prodIds.Contains(p.Id))
-            .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT, Categorie = p.Categorie != null ? p.Categorie.Nom : "" })
-            .ToListAsync(ct);
+        var produits = prodIds.Count == 0
+            ? []
+            : await db.Produits.AsNoTracking()
+                .Where(p => prodIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT, Categorie = p.Categorie != null ? p.Categorie.Nom : "" })
+                .ToListAsync(ct);
         var prodMap = produits.ToDictionary(p => p.Id);
 
-        var grouped = lignes
+        var svcIds = lignes.Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var services = svcIds.Count == 0
+            ? []
+            : await db.Services.AsNoTracking()
+                .Where(s => svcIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.Reference, s.Designation, s.CoutHT })
+                .ToListAsync(ct);
+        var svcMap = services.ToDictionary(s => s.Id);
+
+        var productRows = lignes
             .Where(l => l.ProduitId is > 0)
             .GroupBy(l => l.ProduitId!.Value)
             .Select(g =>
@@ -76,11 +90,35 @@ public sealed class ReportService : IReportService
                     dev,
                     profit,
                     marginPct);
-            })
+            });
+
+        var serviceRows = lignes
+            .Where(l => l.ServiceId is > 0)
+            .GroupBy(l => l.ServiceId!.Value)
+            .Select(g =>
+            {
+                var s = svcMap.GetValueOrDefault(g.Key);
+                var cout = s?.CoutHT ?? 0;
+                var ht = g.Sum(l => DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise));
+                var cost = g.Sum(l => l.Quantite * cout);
+                var profit = ht - cost;
+                var tva = g.Sum(l => DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise) * (l.TauxTVA / 100m));
+                var marginPct = ht > 0 ? profit / ht * 100m : 0;
+                return new ReportSaleByProductRow(
+                    s?.Reference ?? string.Empty,
+                    s?.Designation ?? g.First().Designation,
+                    serviceCategory,
+                    g.Sum(l => l.Quantite),
+                    ht,
+                    ht + tva,
+                    dev,
+                    profit,
+                    marginPct);
+            });
+
+        return productRows.Concat(serviceRows)
             .OrderByDescending(r => r.TotalTtc)
             .ToList();
-
-        return grouped;
     }
 
     public async Task<List<ReportSaleByCustomerRow>> GetSalesByCustomerAsync(
@@ -100,6 +138,7 @@ public sealed class ReportService : IReportService
                 Lignes = f.Lignes!.Select(l => new
                 {
                     l.ProduitId,
+                    l.ServiceId,
                     l.Quantite,
                     l.PrixUnitaireHT,
                     l.Remise,
@@ -117,11 +156,22 @@ public sealed class ReportService : IReportService
         var clientMap = clients.ToDictionary(c => c.Id);
 
         var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
-        var produits = await db.Produits.AsNoTracking()
-            .Where(p => allProdIds.Contains(p.Id))
-            .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT })
-            .ToListAsync(ct);
+        var produits = allProdIds.Count == 0
+            ? []
+            : await db.Produits.AsNoTracking()
+                .Where(p => allProdIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.Reference, p.Designation, p.PrixAchatHT })
+                .ToListAsync(ct);
         var prodMap = produits.ToDictionary(p => p.Id);
+
+        var allSvcIds = factures.SelectMany(f => f.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var services = allSvcIds.Count == 0
+            ? []
+            : await db.Services.AsNoTracking()
+                .Where(s => allSvcIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.Reference, s.Designation, s.CoutHT })
+                .ToListAsync(ct);
+        var svcMap = services.ToDictionary(s => s.Id);
 
         var grouped = factures
             .GroupBy(f => f.ClientId)
@@ -131,8 +181,8 @@ public sealed class ReportService : IReportService
 
                 var allLignes = g.SelectMany(f => f.Lignes).ToList();
 
-                // Per-product sub-rows (profit before global discount)
-                var products = allLignes
+                // Per-product / service sub-rows (profit before global discount)
+                var productRows = allLignes
                     .Where(l => l.ProduitId is > 0)
                     .GroupBy(l => l.ProduitId!.Value)
                     .Select(pg =>
@@ -153,7 +203,32 @@ public sealed class ReportService : IReportService
                             dev,
                             profit,
                             marginPct);
-                    })
+                    });
+
+                var serviceRows = allLignes
+                    .Where(l => l.ServiceId is > 0)
+                    .GroupBy(l => l.ServiceId!.Value)
+                    .Select(sg =>
+                    {
+                        var s = svcMap.GetValueOrDefault(sg.Key);
+                        var cout = s?.CoutHT ?? 0;
+                        var ht = sg.Sum(l => DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise));
+                        var cost = sg.Sum(l => l.Quantite * cout);
+                        var profit = ht - cost;
+                        var tva = sg.Sum(l => DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise) * (l.TauxTVA / 100m));
+                        var marginPct = ht > 0 ? profit / ht * 100m : 0;
+                        return new ReportSaleByCustomerProductRow(
+                            s?.Reference ?? string.Empty,
+                            s?.Designation ?? sg.First().Designation,
+                            sg.Sum(l => l.Quantite),
+                            ht,
+                            ht + tva,
+                            dev,
+                            profit,
+                            marginPct);
+                    });
+
+                var products = productRows.Concat(serviceRows)
                     .OrderByDescending(pr => pr.TotalTtc)
                     .ToList();
 
@@ -165,10 +240,14 @@ public sealed class ReportService : IReportService
                     foreach (var l in f.Lignes)
                     {
                         var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
-                        var prixAchat = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0 : 0;
+                        decimal unitCost = 0;
+                        if (l.ProduitId is int pid)
+                            unitCost = prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0;
+                        else if (l.ServiceId is int sid)
+                            unitCost = svcMap.GetValueOrDefault(sid)?.CoutHT ?? 0;
                         totalHt += lht * factor;
                         totalTva += lht * (l.TauxTVA / 100m) * factor;
-                        totalCost += l.Quantite * prixAchat;
+                        totalCost += l.Quantite * unitCost;
                     }
                 }
                 var totalProfit = totalHt - totalCost;
@@ -263,6 +342,7 @@ public sealed class ReportService : IReportService
                 Lignes = f.Lignes!.Select(l => new
                 {
                     l.ProduitId,
+                    l.ServiceId,
                     l.Quantite,
                     l.PrixUnitaireHT,
                     l.Remise,
@@ -279,11 +359,22 @@ public sealed class ReportService : IReportService
         var clientMap = clients.ToDictionary(c => c.Id);
 
         var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
-        var produits = await db.Produits.AsNoTracking()
-            .Where(p => allProdIds.Contains(p.Id))
-            .Select(p => new { p.Id, p.PrixAchatHT })
-            .ToListAsync(ct);
+        var produits = allProdIds.Count == 0
+            ? []
+            : await db.Produits.AsNoTracking()
+                .Where(p => allProdIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.PrixAchatHT })
+                .ToListAsync(ct);
         var prodMap = produits.ToDictionary(p => p.Id);
+
+        var allSvcIds = factures.SelectMany(f => f.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var services = allSvcIds.Count == 0
+            ? []
+            : await db.Services.AsNoTracking()
+                .Where(s => allSvcIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.CoutHT })
+                .ToListAsync(ct);
+        var svcMap = services.ToDictionary(s => s.Id);
 
         var grouped = factures
             .GroupBy(f => f.Date.Date)
@@ -298,10 +389,14 @@ public sealed class ReportService : IReportService
                     foreach (var l in f.Lignes)
                     {
                         var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
-                        var prixAchat = l.ProduitId is int pid ? prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0 : 0;
+                        decimal unitCost = 0;
+                        if (l.ProduitId is int pid)
+                            unitCost = prodMap.GetValueOrDefault(pid)?.PrixAchatHT ?? 0;
+                        else if (l.ServiceId is int sid)
+                            unitCost = svcMap.GetValueOrDefault(sid)?.CoutHT ?? 0;
                         ht += lht;
                         tva += lht * (l.TauxTVA / 100m);
-                        cost += l.Quantite * prixAchat;
+                        cost += l.Quantite * unitCost;
                     }
                     ht *= factor;
                     tva *= factor;
@@ -470,6 +565,8 @@ public sealed class ReportService : IReportService
         var typeMarge = _locale.T("Reports_TypeSaleMargin");
         var typeAchat = _locale.T("Reports_TypePurchase");
         var typeCharge = _locale.T("Reports_TypeCharge");
+        var typeAvoirClient = _locale.T("Reports_TypeAvoirClient");
+        var typeAvoirFournisseur = _locale.T("Reports_TypeAvoirFournisseur");
 
         var factures = await db.Factures.AsNoTracking()
             .Where(f => f.Date >= from && f.Date < toEnd)
@@ -490,14 +587,38 @@ public sealed class ReportService : IReportService
             })
             .ToListAsync(ct);
 
-        var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value).Distinct().ToList();
+        var avoirsClient = await db.Avoirs.AsNoTracking()
+            .Where(a => a.Date >= from && a.Date < toEnd)
+            .Select(a => new
+            {
+                a.Numero,
+                a.Date,
+                Lignes = a.Lignes!.Select(l => new
+                {
+                    l.ProduitId,
+                    l.ServiceId,
+                    l.Quantite,
+                    l.PrixUnitaireHT,
+                    l.Remise,
+                    l.TauxTVA
+                }).ToList()
+            })
+            .ToListAsync(ct);
+
+        var allProdIds = factures.SelectMany(f => f.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value)
+            .Concat(avoirsClient.SelectMany(a => a.Lignes).Where(l => l.ProduitId is > 0).Select(l => l.ProduitId!.Value))
+            .Distinct()
+            .ToList();
         var prodMap = allProdIds.Count == 0
             ? new Dictionary<int, decimal>()
             : await db.Produits.AsNoTracking()
                 .Where(p => allProdIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, p => p.PrixAchatHT, ct);
 
-        var allSvcIds = factures.SelectMany(f => f.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value).Distinct().ToList();
+        var allSvcIds = factures.SelectMany(f => f.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value)
+            .Concat(avoirsClient.SelectMany(a => a.Lignes).Where(l => l.ServiceId is > 0).Select(l => l.ServiceId!.Value))
+            .Distinct()
+            .ToList();
         var svcMap = allSvcIds.Count == 0
             ? new Dictionary<int, decimal>()
             : await db.Services.AsNoTracking()
@@ -505,30 +626,53 @@ public sealed class ReportService : IReportService
                 .ToDictionaryAsync(s => s.Id, s => s.CoutHT, ct);
 
         decimal totalMargin = 0;
+        decimal totalAvoirsClient = 0;
         foreach (var f in factures)
         {
             var factor = 1 - f.RemiseGlobale / 100m;
-            decimal ht = 0, cost = 0;
+            decimal ttc = 0, costHt = 0;
             foreach (var l in f.Lignes)
             {
                 var lht = DocumentTotalsHelper.LigneHT(l.Quantite, l.PrixUnitaireHT, l.Remise);
-                ht += lht;
+                ttc += lht * (1 + l.TauxTVA / 100m);
                 if (l.ProduitId is int pid)
-                    cost += l.Quantite * prodMap.GetValueOrDefault(pid);
+                    costHt += l.Quantite * prodMap.GetValueOrDefault(pid);
                 else if (l.ServiceId is int sid)
-                    cost += l.Quantite * svcMap.GetValueOrDefault(sid);
+                    costHt += l.Quantite * svcMap.GetValueOrDefault(sid);
             }
-            ht *= factor;
-            var profit = ht - cost;
+            ttc *= factor;
+            var profit = ttc - costHt;
             totalMargin += profit;
             rows.Add(new ReportProfitChargeRow(
                 typeMarge,
                 f.Numero ?? string.Empty,
                 f.Date,
-                ht,
+                ttc,
                 profit,
                 dev,
                 profit >= 0));
+        }
+
+        foreach (var a in avoirsClient)
+        {
+            var lignes = a.Lignes.Select(l => new AvoirLigne
+            {
+                Quantite = l.Quantite,
+                PrixUnitaireHT = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTVA = l.TauxTVA
+            }).ToList();
+            // Same as avoir fournisseur: use the full credit-note TTC
+            var (_, _, ttc) = DocumentTotalsHelper.AvoirTotals(lignes);
+            totalAvoirsClient += ttc;
+            rows.Add(new ReportProfitChargeRow(
+                typeAvoirClient,
+                a.Numero ?? string.Empty,
+                a.Date,
+                ttc,
+                -ttc,
+                dev,
+                false));
         }
 
         var facturesFournisseur = await db.FacturesFournisseurs.AsNoTracking()
@@ -549,6 +693,7 @@ public sealed class ReportService : IReportService
             .ToListAsync(ct);
 
         decimal totalPurchases = 0;
+        decimal totalAvoirsFournisseur = 0;
         foreach (var f in facturesFournisseur)
         {
             var lignes = f.Lignes.Select(l => new FactureFournisseurLigne
@@ -558,16 +703,53 @@ public sealed class ReportService : IReportService
                 Remise = l.Remise,
                 TauxTVA = l.TauxTVA
             }).ToList();
-            var (ht, _, _) = DocumentTotalsHelper.FactureFournisseurTotals(lignes, f.RemiseGlobale);
-            totalPurchases += ht;
+            var (_, _, ttc) = DocumentTotalsHelper.FactureFournisseurTotals(lignes, f.RemiseGlobale);
+            totalPurchases += ttc;
             rows.Add(new ReportProfitChargeRow(
                 typeAchat,
                 f.Numero ?? string.Empty,
                 f.Date,
-                ht,
-                -ht,
+                ttc,
+                -ttc,
                 dev,
                 false));
+        }
+
+        var avoirsFournisseur = await db.AvoirsFournisseurs.AsNoTracking()
+            .Where(a => a.Date >= from && a.Date < toEnd)
+            .Select(a => new
+            {
+                a.Numero,
+                a.Date,
+                Lignes = a.Lignes!.Select(l => new
+                {
+                    l.Quantite,
+                    l.PrixUnitaireHT,
+                    l.Remise,
+                    l.TauxTVA
+                }).ToList()
+            })
+            .ToListAsync(ct);
+
+        foreach (var a in avoirsFournisseur)
+        {
+            var lignes = a.Lignes.Select(l => new AvoirFournisseurLigne
+            {
+                Quantite = l.Quantite,
+                PrixUnitaireHT = l.PrixUnitaireHT,
+                Remise = l.Remise,
+                TauxTVA = l.TauxTVA
+            }).ToList();
+            var (_, _, ttc) = DocumentTotalsHelper.AvoirFournisseurTotals(lignes);
+            totalAvoirsFournisseur += ttc;
+            rows.Add(new ReportProfitChargeRow(
+                typeAvoirFournisseur,
+                a.Numero ?? string.Empty,
+                a.Date,
+                ttc,
+                ttc,
+                dev,
+                true));
         }
 
         var charges = await db.Charges.AsNoTracking()
@@ -593,19 +775,21 @@ public sealed class ReportService : IReportService
                 c.TypeCharge?.Nom ?? typeCharge,
                 label,
                 c.Date,
-                0,
+                c.MontantTtc,
                 -c.MontantTtc,
                 dev,
                 false));
         }
 
         var sorted = rows.OrderByDescending(r => r.Date).ThenBy(r => r.TypeLabel).ToList();
-        var net = totalMargin - totalPurchases - totalCharges;
+        var net = totalMargin - totalAvoirsClient - totalPurchases + totalAvoirsFournisseur - totalCharges;
 
         return new ReportProfitChargesResult
         {
             TotalSalesMargin = totalMargin,
+            TotalAvoirsClient = totalAvoirsClient,
             TotalPurchases = totalPurchases,
+            TotalAvoirsFournisseur = totalAvoirsFournisseur,
             TotalCharges = totalCharges,
             NetResult = net,
             Devise = dev,

@@ -85,12 +85,16 @@ public partial class ReportsListViewModel : BaseViewModel
     [ObservableProperty] private string _lblStockValHt = string.Empty;
     [ObservableProperty] private string _lblStockValTtc = string.Empty;
     [ObservableProperty] private string _lblProfitChargesTotalMargin = string.Empty;
+    [ObservableProperty] private string _lblProfitChargesTotalAvoirsClient = string.Empty;
     [ObservableProperty] private string _lblProfitChargesTotalPurchases = string.Empty;
+    [ObservableProperty] private string _lblProfitChargesTotalAvoirsFournisseur = string.Empty;
     [ObservableProperty] private string _lblProfitChargesTotalCharges = string.Empty;
     [ObservableProperty] private string _lblProfitChargesNetResult = string.Empty;
     [ObservableProperty] private bool _isNetPositive = true;
     [ObservableProperty] private string _lblProfitChargesMarginLabel = string.Empty;
+    [ObservableProperty] private string _lblProfitChargesAvoirsClientLabel = string.Empty;
     [ObservableProperty] private string _lblProfitChargesPurchasesLabel = string.Empty;
+    [ObservableProperty] private string _lblProfitChargesAvoirsFournisseurLabel = string.Empty;
     [ObservableProperty] private string _lblProfitChargesChargesLabel = string.Empty;
     [ObservableProperty] private string _lblProfitChargesNetLabel = string.Empty;
     [ObservableProperty] private string _colProfitType = string.Empty;
@@ -138,13 +142,15 @@ public partial class ReportsListViewModel : BaseViewModel
         LblStockValHtLabel = _locale.T("Reports_LblStockValHt");
         LblStockValTtcLabel = _locale.T("Reports_LblStockValTtc");
         LblProfitChargesMarginLabel = _locale.T("Reports_LblTotalSalesMargin");
+        LblProfitChargesAvoirsClientLabel = _locale.T("Reports_LblTotalAvoirsClient");
         LblProfitChargesPurchasesLabel = _locale.T("Reports_LblTotalPurchases");
+        LblProfitChargesAvoirsFournisseurLabel = _locale.T("Reports_LblTotalAvoirsFournisseur");
         LblProfitChargesChargesLabel = _locale.T("Reports_LblTotalCharges");
         LblProfitChargesNetLabel = _locale.T("Reports_LblNetResult");
         ColProfitType = _locale.T("Reports_ColType");
         ColProfitRef = _locale.T("Reports_ColRefLibelle");
         ColProfitDate = _locale.T("DevisList_ColDate");
-        ColProfitHt = _locale.T("Reports_LblTotalHt");
+        ColProfitHt = _locale.T("Reports_LblTotalTtc");
         ColProfitAmount = _locale.T("Reports_ColMarginCharge");
     }
 
@@ -301,7 +307,9 @@ public partial class ReportsListViewModel : BaseViewModel
         _allProfitCharges = result.Rows;
         var dev = result.Devise;
         LblProfitChargesTotalMargin = $"+{result.TotalSalesMargin:N2} {dev}";
+        LblProfitChargesTotalAvoirsClient = $"-{result.TotalAvoirsClient:N2} {dev}";
         LblProfitChargesTotalPurchases = $"-{result.TotalPurchases:N2} {dev}";
+        LblProfitChargesTotalAvoirsFournisseur = $"+{result.TotalAvoirsFournisseur:N2} {dev}";
         LblProfitChargesTotalCharges = $"-{result.TotalCharges:N2} {dev}";
         var netSign = result.NetResult >= 0 ? "+" : "";
         LblProfitChargesNetResult = $"{netSign}{result.NetResult:N2} {dev}";
